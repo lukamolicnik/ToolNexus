@@ -1,0 +1,54 @@
+﻿@page "/tools"
+@inject IToolService ToolService
+@attribute [StreamRendering]
+
+<PageTitle>Tools</PageTitle>
+<h3>Tools</h3>
+
+@if (tools == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Version</th>
+                <th>Created By</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tool in tools)
+            {
+                <tr>
+                    <td>@tool.Id</td>
+                    <td>@tool.Code</td>
+                    <td>@tool.Name</td>
+                    <td>@tool.Description</td>
+                    <td>@tool.Version</td>
+                    <td>@tool.CreatedBy</td>
+                    <td>@tool.CreatedAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Tool> tools = new List<Tool>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await ToolService.GetAllToolsAsync();
+        if (result is not null)
+        {
+            tools = result;
+        }
+    }
+}
