@@ -19,4 +19,8 @@
     <ProjectReference Include="..\ToolNexus.Application\ToolNexus.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DBScriptis\" />
+  </ItemGroup>
+
 </Project>
