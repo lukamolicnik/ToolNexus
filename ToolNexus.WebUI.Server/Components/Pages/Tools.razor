@@ -1,47 +1,142 @@
 ﻿@page "/tools"
+@rendermode InteractiveServer
 @inject IToolService ToolService
 @attribute [StreamRendering]
 
-<PageTitle>Tools</PageTitle>
-<h3>Tools</h3>
+<PageTitle>Orodja - ToolNexus</PageTitle>
 
-@if (tools == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Version</th>
-                <th>Created By</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var tool in tools)
-            {
-                <tr>
-                    <td>@tool.Id</td>
-                    <td>@tool.Code</td>
-                    <td>@tool.Name</td>
-                    <td>@tool.Description</td>
-                    <td>@tool.Version</td>
-                    <td>@tool.CreatedBy</td>
-                    <td>@tool.CreatedAt</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<ProtectedPage RequiredRoles="@(new[] { UserRole.Worker, UserRole.ProductionSupervisor, UserRole.Administrator })">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Orodja</MudText>
+            <MudButton Variant="Variant.Outlined" 
+                      StartIcon="@Icons.Material.Filled.ArrowBack" 
+                      Href="/">Nazaj
+            </MudButton>
+        </MudStack>
+
+        @if (tools == null)
+        {
+            <MudPaper Elevation="2" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Nalagam orodja...</MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else if (tools.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="Icons.Material.Filled.Info" Size="Size.Large" />
+                    <MudText Typo="Typo.h6">Ni orodij</MudText>
+                    <MudText Typo="Typo.body1">V sistemu trenutno ni registriranih orodij.</MudText>
+                </MudStack>
+            </MudAlert>
+        }
+        else
+        {
+            <MudPaper Elevation="2">
+                <MudToolBar>
+                    <MudIcon Icon="Icons.Material.Filled.List" />
+                    <MudText Typo="Typo.h6" Class="ml-3">Seznam orodij</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString" 
+                                 Placeholder="Iskanje..." 
+                                 Adornment="Adornment.Start" 
+                                 AdornmentIcon="Icons.Material.Filled.Search" 
+                                 IconSize="Size.Medium" 
+                                 Immediate="true"
+                                 Class="mt-0" />
+                </MudToolBar>
+                
+                <MudDataGrid Items="@tools" 
+                           Filterable="true" 
+                           FilterMode="DataGridFilterMode.ColumnFilterRow"
+                           SortMode="SortMode.Multiple" 
+                           Groupable="false"
+                           QuickFilter="@_quickFilter"
+                           Hover="true"
+                           Striped="true"
+                           Dense="true">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Id" Title="ID" />
+                        <TemplateColumn Title="Koda">
+                            <CellTemplate>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@context.Item.Code</MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.Name" Title="Naziv" />
+                        <PropertyColumn Property="x => x.Description" Title="Opis">
+                            <CellTemplate>
+                                <MudText>@(context.Item.Description ?? "-")</MudText>
+                            </CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.Version" Title="Verzija">
+                            <CellTemplate>
+                                <MudText>@(context.Item.Version ?? "-")</MudText>
+                            </CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.CreatedBy" Title="Ustvaril">
+                            <CellTemplate>
+                                <MudText>@(context.Item.CreatedBy ?? "-")</MudText>
+                            </CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
+                        <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
+                            <CellTemplate>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudTooltip Text="Poglej podrobnosti">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                                     Color="Color.Primary" 
+                                                     Size="Size.Small" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Uredi">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                     Color="Color.Warning" 
+                                                     Size="Size.Small" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Izposodi">
+                                        <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
+                                                     Color="Color.Success" 
+                                                     Size="Size.Small" />
+                                    </MudTooltip>
+                                </MudStack>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="Tool" />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudPaper>
+        }
+    </MudStack>
+</ProtectedPage>
 
 @code {
     private List<Tool> tools = new List<Tool>();
+    private string searchString = "";
+
+    private Func<Tool, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (x.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(x.Description) && x.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrEmpty(x.Version) && x.Version.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
 
     protected override async Task OnInitializedAsync()
     {

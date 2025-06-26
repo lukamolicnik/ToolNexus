@@ -1,10 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ToolNexus.Application.Tools;
+using ToolNexus.Application.Users;
 
 namespace ToolNexus.Application
 {
@@ -12,7 +8,13 @@ namespace ToolNexus.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+            // Tool services
             services.AddScoped<IToolService, ToolService>();
+
+            // User services
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<IUserService, UserService>();
+
             return services;
         }
     }

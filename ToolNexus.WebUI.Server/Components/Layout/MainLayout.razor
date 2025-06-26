@@ -1,17 +1,97 @@
 ﻿@inherits LayoutComponentBase
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudThemeProvider Theme="customTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+@if (CurrentUserService.IsAuthenticated)
+{
+    <MudLayout>
+        <MudAppBar Elevation="1">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+            <MudSpacer />
+            <MudText Typo="Typo.h5" Class="ml-3">ToolNexus</MudText>
+            <MudSpacer />
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+            @* Uporabniške informacije in odjava *@
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Typo="Typo.body2">@CurrentUserService.CurrentUser!.FullName</MudText>
+                <MudChip Size="Size.Small"
+                         Color="@GetRoleColor(CurrentUserService.CurrentUser.Role)"
+                         T="string">
+                    @GetRoleDisplayName(CurrentUserService.CurrentUser.Role)
+                </MudChip>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                               Color="Color.Inherit"
+                               OnClick="HandleLogout"
+                               Title="Odjavi se" />
+            </MudStack>
+        </MudAppBar>
+
+        <MudDrawer @bind-Open="drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+            <NavMenu />
+        </MudDrawer>
+
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
+else
+{
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+}
+
+@code {
+    bool drawerOpen = true;
+    
+    private MudTheme customTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#225da5",
+            PrimaryDarken = "#1a4980",
+            PrimaryLighten = "#4d82c4",
+            Secondary = "#594AE2",
+            AppbarBackground = "#225da5",
+            DrawerBackground = "#FFF",
+            DrawerText = "rgba(0,0,0, 0.7)",
+            AppbarText = "#FFF"
+        }
+    };
+
+    void DrawerToggle()
+    {
+        drawerOpen = !drawerOpen;
+    }
+
+    private async Task HandleLogout()
+    {
+        Console.WriteLine("MainLayout logout clicked");
+        await CurrentUserService.ClearCurrentUserAsync();
+        NavigationManager.NavigateTo("/login", replace: true);
+    }
+
+    private string GetRoleDisplayName(UserRole role) => role switch
+    {
+        UserRole.Administrator => "Administrator",
+        UserRole.ProductionSupervisor => "Nadzornik proizvodnje",
+        UserRole.Worker => "Delavec",
+        _ => "Neznano"
+    };
+
+    private Color GetRoleColor(UserRole role) => role switch
+    {
+        UserRole.Administrator => Color.Error,
+        UserRole.ProductionSupervisor => Color.Warning,
+        UserRole.Worker => Color.Info,
+        _ => Color.Default
+    };
+}

@@ -1,34 +1,75 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">ToolNexus.WebUI.Server</a>
-    </div>
-</div>
+﻿@inject ICurrentUserService CurrentUserService
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="Icons.Material.Filled.Dashboard">
+        Nadzorna plošča
+    </MudNavLink>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    @if (CurrentUserService.IsAuthenticated)
+    {
+        @* Delavec funkcionalnosti *@
+        @if (CurrentUserService.IsWorker || CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
+        {
+            <MudNavGroup Title="Orodja" Icon="Icons.Material.Filled.Build" Expanded="false">
+                <MudNavLink Href="/tools" Icon="Icons.Material.Filled.List">
+                    Seznam orodij
+                </MudNavLink>
+                <MudNavLink Href="/tools/loans" Icon="Icons.Material.Filled.SwapHoriz">
+                    Moje izposoje
+                </MudNavLink>
+                <MudNavLink Href="/tools/reservations" Icon="Icons.Material.Filled.BookmarkBorder">
+                    Moje rezervacije
+                </MudNavLink>
+            </MudNavGroup>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        @* Nadzornik proizvodnje funkcionalnosti *@
+        @if (CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
+        {
+            <MudDivider Class="my-2" />
+            <MudNavGroup Title="Upravljanje" Icon="Icons.Material.Filled.ManageAccounts" Expanded="false">
+                <MudNavLink Href="/categories" Icon="Icons.Material.Filled.Category">
+                    Kategorije
+                </MudNavLink>
+                <MudNavLink Href="/materials" Icon="Icons.Material.Filled.Inventory">
+                    Materiali
+                </MudNavLink>
+                <MudNavLink Href="/compatibility" Icon="Icons.Material.Filled.Link">
+                    Kompatibilnost
+                </MudNavLink>
+                <MudNavLink Href="/loans/manage" Icon="Icons.Material.Filled.Assignment">
+                    Upravljanje izposoj
+                </MudNavLink>
+            </MudNavGroup>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="tools">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> 
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-wrench" viewBox="0 0 16 16">
-                    <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z" />
-                </svg>
-                Tools
-            </NavLink>
-        </div>
-    </nav>
-</div>
+            <MudNavGroup Title="Poročila" Icon="Icons.Material.Filled.Assessment" Expanded="false">
+                <MudNavLink Href="/reports/usage" Icon="Icons.Material.Filled.TrendingUp">
+                    Izkoriščenost
+                </MudNavLink>
+                <MudNavLink Href="/reports/inventory" Icon="Icons.Material.Filled.Inventory2">
+                    Stanje zalog
+                </MudNavLink>
+                <MudNavLink Href="/reports/transactions" Icon="Icons.Material.Filled.Receipt">
+                    Transakcije
+                </MudNavLink>
+            </MudNavGroup>
+        }
 
+        @* Administrator funkcionalnosti *@
+        @if (CurrentUserService.IsAdministrator)
+        {
+            <MudDivider Class="my-2" />
+            <MudNavGroup Title="Administracija" Icon="Icons.Material.Filled.AdminPanelSettings" Expanded="false">
+                <MudNavLink Href="/users" Icon="Icons.Material.Filled.People">
+                    Uporabniki
+                </MudNavLink>
+                <MudNavLink Href="/settings" Icon="Icons.Material.Filled.Settings">
+                    Sistemske nastavitve
+                </MudNavLink>
+                <MudNavLink Href="/audit" Icon="Icons.Material.Filled.History">
+                    Revizijska sled
+                </MudNavLink>
+            </MudNavGroup>
+        }
+    }
+</MudNavMenu>

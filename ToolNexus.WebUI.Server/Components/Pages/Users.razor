@@ -1,0 +1,312 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+@inject IUserService UserService
+@inject ICurrentUserService CurrentUserService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Uporabniki - ToolNexus</PageTitle>
+
+<ProtectedPage RequiredRoles="@(new[] { UserRole.Administrator })">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Upravljanje uporabnikov</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.PersonAdd"
+                          OnClick="ShowCreateUserForm">
+                    Dodaj uporabnika
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        @if (users == null)
+        {
+            <MudPaper Elevation="2" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Nalagam uporabnike...</MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else
+        {
+            <MudPaper Elevation="2">
+                <MudToolBar>
+                    <MudIcon Icon="Icons.Material.Filled.People" />
+                    <MudText Typo="Typo.h6" Class="ml-3">Seznam uporabnikov</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString" 
+                                 Placeholder="Iskanje..." 
+                                 Adornment="Adornment.Start" 
+                                 AdornmentIcon="Icons.Material.Filled.Search" 
+                                 IconSize="Size.Medium" 
+                                 Immediate="true"
+                                 Class="mt-0" />
+                </MudToolBar>
+                
+                <MudDataGrid Items="@users" 
+                           Filterable="true" 
+                           FilterMode="DataGridFilterMode.ColumnFilterRow"
+                           SortMode="SortMode.Multiple" 
+                           Groupable="false"
+                           QuickFilter="@_quickFilter"
+                           Hover="true"
+                           Striped="true"
+                           Dense="true">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Id" Title="ID" />
+                        <TemplateColumn Title="Uporabniško ime">
+                            <CellTemplate>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@context.Item.Username</MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.FullName" Title="Ime in priimek" />
+                        <PropertyColumn Property="x => x.Email" Title="Email" />
+                        <TemplateColumn Title="Vloga" Sortable="true">
+                            <CellTemplate>
+                                <MudChip T="string" Size="Size.Small" 
+                                        Color="@GetRoleColor(context.Item.Role)"
+                                        Icon="@GetRoleIcon(context.Item.Role)">
+                                    @GetRoleDisplayName(context.Item.Role)
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Status" Sortable="true">
+                            <CellTemplate>
+                                <MudChip T="string" Size="Size.Small" 
+                                        Color="@(context.Item.IsActive ? Color.Success : Color.Error)"
+                                        Icon="@(context.Item.IsActive ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Block)">
+                                    @(context.Item.IsActive ? "Aktiven" : "Neaktiven")
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
+                            <CellTemplate>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudTooltip Text="Uredi uporabnika">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                     Color="Color.Warning" 
+                                                     Size="Size.Small"
+                                                     OnClick="() => ShowEditUserForm(context.Item)" />
+                                    </MudTooltip>
+                                    @if (CurrentUserService.CurrentUser != null && context.Item.Id != CurrentUserService.CurrentUser.Id)
+                                    {
+                                        <MudTooltip Text="Izbriši uporabnika">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                         Color="Color.Error" 
+                                                         Size="Size.Small"
+                                                         OnClick="() => ShowDeleteConfirmation(context.Item)" />
+                                        </MudTooltip>
+                                    }
+                                </MudStack>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="UserDto" />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudPaper>
+        }
+    </MudStack>
+
+    @* Create User Form Overlay *@
+    @if (showCreateForm)
+    {
+        <MudOverlay Visible="true" DarkBackground="true" ZIndex="9999">
+            <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h5">Dodaj novega uporabnika</MudText>
+                        <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HideCreateForm" />
+                    </MudStack>
+
+                    <EditForm EditContext="createEditContext" OnValidSubmit="HandleCreateUser" FormName="CreateUserForm">
+                        <DataAnnotationsValidator />
+                        <MudStack Spacing="3">
+                            <MudTextField @bind-Value="createUserDto.Username"
+                                          For="@(() => createUserDto.Username)"
+                                          Label="Uporabniško ime"
+                                          Variant="Variant.Outlined"
+                                          Required="true" />
+
+                            <MudStack Row="true" Spacing="2">
+                                <MudTextField @bind-Value="createUserDto.FirstName"
+                                              For="@(() => createUserDto.FirstName)"
+                                              Label="Ime"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+
+                                <MudTextField @bind-Value="createUserDto.LastName"
+                                              For="@(() => createUserDto.LastName)"
+                                              Label="Priimek"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+                            </MudStack>
+
+                            <MudTextField @bind-Value="createUserDto.Email"
+                                          For="@(() => createUserDto.Email)"
+                                          Label="Email"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email"
+                                          Required="true" />
+
+                            <MudSelect @bind-Value="createUserDto.Role"
+                                      For="@(() => createUserDto.Role)"
+                                      Label="Vloga"
+                                      Variant="Variant.Outlined"
+                                      Required="true">
+                                <MudSelectItem Value="UserRole.Worker">Delavec</MudSelectItem>
+                                <MudSelectItem Value="UserRole.ProductionSupervisor">Nadzornik proizvodnje</MudSelectItem>
+                                <MudSelectItem Value="UserRole.Administrator">Administrator</MudSelectItem>
+                            </MudSelect>
+
+                            <MudTextField @bind-Value="createUserDto.Password"
+                                          For="@(() => createUserDto.Password)"
+                                          Label="Geslo"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Password"
+                                          Required="true" />
+
+                            <MudCheckBox @bind-Value="createUserDto.IsActive"
+                                        Label="Aktiven uporabnik"
+                                        Color="Color.Primary" />
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                                <MudButton OnClick="HideCreateForm">Prekliči</MudButton>
+                                <MudButton ButtonType="ButtonType.Submit" 
+                                          Color="Color.Primary" 
+                                          Variant="Variant.Filled"
+                                          Disabled="isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                    }
+                                    Ustvari
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </EditForm>
+                </MudStack>
+            </MudPaper>
+        </MudOverlay>
+    }
+</ProtectedPage>
+
+@code {
+    private List<UserDto>? users;
+    private string searchString = "";
+    private bool showCreateForm = false;
+    private bool isSubmitting = false;
+    private CreateUserDto createUserDto = new();
+    private EditContext createEditContext = default!;
+
+    private Func<UserDto, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (x.Username.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.FullName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        createEditContext = new EditContext(createUserDto);
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            users = await UserService.GetAllUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju uporabnikov: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ShowCreateUserForm()
+    {
+        createUserDto = new CreateUserDto();
+        createEditContext = new EditContext(createUserDto);
+        showCreateForm = true;
+    }
+
+    private void HideCreateForm()
+    {
+        showCreateForm = false;
+        createUserDto = new CreateUserDto();
+    }
+
+    private async Task HandleCreateUser()
+    {
+        isSubmitting = true;
+        try
+        {
+            await UserService.CreateUserAsync(createUserDto, CurrentUserService.CurrentUser!.Username);
+            Snackbar.Add($"Uporabnik {createUserDto.FirstName} {createUserDto.LastName} uspešno ustvarjen.", Severity.Success);
+            HideCreateForm();
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ShowEditUserForm(UserDto user)
+    {
+        Snackbar.Add("Edit funkcionalnost bo dodana v naslednji fazi", Severity.Info);
+    }
+
+    private async Task ShowDeleteConfirmation(UserDto user)
+    {
+        Snackbar.Add("Delete funkcionalnost bo dodana v naslednji fazi", Severity.Info);
+    }
+
+    private Color GetRoleColor(UserRole role) => role switch
+    {
+        UserRole.Administrator => Color.Error,
+        UserRole.ProductionSupervisor => Color.Warning,
+        UserRole.Worker => Color.Info,
+        _ => Color.Default
+    };
+
+    private string GetRoleIcon(UserRole role) => role switch
+    {
+        UserRole.Administrator => Icons.Material.Filled.AdminPanelSettings,
+        UserRole.ProductionSupervisor => Icons.Material.Filled.ManageAccounts,
+        UserRole.Worker => Icons.Material.Filled.Person,
+        _ => Icons.Material.Filled.Person
+    };
+
+    private string GetRoleDisplayName(UserRole role) => role switch
+    {
+        UserRole.Administrator => "Administrator",
+        UserRole.ProductionSupervisor => "Nadzornik",
+        UserRole.Worker => "Delavec",
+        _ => "Neznano"
+    };
+}

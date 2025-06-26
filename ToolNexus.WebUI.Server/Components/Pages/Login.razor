@@ -1,0 +1,211 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@inject IAuthenticationService AuthenticationService
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Prijava - ToolNexus</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudStack Spacing="4">
+            <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.h4" Color="Color.Primary" Align="Align.Center">ToolNexus</MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    Prijavite se v sistem za upravljanje orodij
+                </MudText>
+            </MudStack>
+
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="loginDto.Username"
+                              Label="Uporabniško ime"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="Icons.Material.Filled.Person" />
+
+                <MudTextField @bind-Value="loginDto.Password"
+                              Label="Geslo"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="Icons.Material.Filled.Lock" />
+
+                <MudButton OnClick="@(async () => { Console.WriteLine("Button clicked!"); await HandleLoginAsync(); })"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           Disabled="isLoading"
+                           StartIcon="@(isLoading ? null : Icons.Material.Filled.Login)">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Prijavjam...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Prijavi se</MudText>
+                    }
+                </MudButton>
+
+                @* Test HTML gumb *@
+                <button type="button" @onclick="HandleLoginAsync" disabled="@isLoading" style="width: 100%; padding: 12px; background: #1976d2; color: white; border: none; border-radius: 4px; margin-top: 8px;">
+                    @if (isLoading)
+                    {
+                        <span>Prijavjam...</span>
+                    }
+                    else
+                    {
+                        <span>Prijavi se (HTML test)</span>
+                    }
+                </button>
+            </MudStack>
+
+            <MudDivider />
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary">
+                    Testni uporabniki:
+                </MudText>
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.caption">admin / admin123</MudText>
+                    <MudText Typo="Typo.caption">supervisor / supervisor123</MudText>
+                    <MudText Typo="Typo.caption">worker / worker123</MudText>
+                </MudStack>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginDto loginDto = new();
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Login page initialized. IsAuthenticated: {CurrentUserService.IsAuthenticated}");
+        Console.WriteLine($"Current user: {CurrentUserService.CurrentUser?.FullName ?? "NULL"}");
+
+        // Če je uporabnik že prijavljen, ga preusmeri na glavno stran
+        if (CurrentUserService.IsAuthenticated)
+        {
+            Console.WriteLine("User already authenticated, redirecting...");
+            await Task.Delay(1);
+            NavigationManager.NavigateTo("/", replace: true);
+        }
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        try
+        {
+            // NAJPREJ - preveri ali se funkcija sploh kliče
+            Console.WriteLine("=== HandleLoginAsync START ===");
+            Console.WriteLine($"Username value: '{loginDto?.Username ?? "NULL"}'");
+            Console.WriteLine($"Password value: '{(string.IsNullOrEmpty(loginDto?.Password) ? "EMPTY" : "HAS_VALUE")}'");
+
+            // Set loading immediately
+            isLoading = true;
+            StateHasChanged();
+            Console.WriteLine("Loading state set to true");
+
+            // Basic validation check
+            if (loginDto == null)
+            {
+                Console.WriteLine("ERROR: loginDto is NULL!");
+                Snackbar.Add("Napaka: formularja ni mogoče prebrati", Severity.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(loginDto.Username))
+            {
+                Console.WriteLine("ERROR: Username is empty");
+                Snackbar.Add("Uporabniško ime je obvezno", Severity.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(loginDto.Password))
+            {
+                Console.WriteLine("ERROR: Password is empty");
+                Snackbar.Add("Geslo je obvezno", Severity.Error);
+                return;
+            }
+
+            Console.WriteLine("=== Validation passed, starting authentication ===");
+
+            // Check if services are available
+            if (AuthenticationService == null)
+            {
+                Console.WriteLine("ERROR: AuthenticationService is NULL!");
+                Snackbar.Add("Napaka: avtentifikacijski servis ni na voljo", Severity.Error);
+                return;
+            }
+
+            Console.WriteLine("Calling AuthenticationService.AuthenticateAsync...");
+            var result = await AuthenticationService.AuthenticateAsync(loginDto);
+            Console.WriteLine($"Authentication completed. Success: {result?.Success ?? false}");
+
+            if (result == null)
+            {
+                Console.WriteLine("ERROR: Authentication result is NULL!");
+                Snackbar.Add("Napaka: ni rezultata avtentifikacije", Severity.Error);
+                return;
+            }
+
+            if (result.Success && result.User != null)
+            {
+                Console.WriteLine($"SUCCESS: User authenticated: {result.User.FullName}");
+
+                if (CurrentUserService == null)
+                {
+                    Console.WriteLine("ERROR: CurrentUserService is NULL!");
+                    Snackbar.Add("Napaka: uporabniški servis ni na voljo", Severity.Error);
+                    return;
+                }
+
+                Console.WriteLine("Setting current user...");
+                await CurrentUserService.SetCurrentUserAsync(result.User);
+
+                Console.WriteLine("Showing success message...");
+                Snackbar.Add($"Dobrodošli, {result.User.FullName}!", Severity.Success);
+
+                Console.WriteLine("SUCCESS: Login completed, attempting navigation...");
+                await Task.Delay(1000);
+
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("eval", "window.location.href = '/'");
+                    Console.WriteLine("Navigation initiated via JavaScript");
+                }
+                catch (Exception navEx)
+                {
+                    Console.WriteLine($"JS Navigation failed: {navEx.Message}");
+                    NavigationManager.NavigateTo("/", replace: true);
+                    Console.WriteLine("Navigation initiated via NavigationManager");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"FAILURE: Authentication failed. Message: {result.Message}");
+                Snackbar.Add(result.Message, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"EXCEPTION in HandleLoginAsync: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            Snackbar.Add($"Kritična napaka: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            Console.WriteLine("=== HandleLoginAsync FINALLY ===");
+            isLoading = false;
+            StateHasChanged();
+            Console.WriteLine("Loading state set to false");
+        }
+    }
+}
