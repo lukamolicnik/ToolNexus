@@ -27,7 +27,7 @@ namespace ToolNexus.Application.Users.DTOs
         public string Password { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vloga je obvezna")]
-        public UserRole Role { get; set; }
+        public int UserRoleId { get; set; }
 
         public bool IsActive { get; set; } = true;
     }

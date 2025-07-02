@@ -1,15 +1,13 @@
-﻿@inject ICurrentUserService CurrentUserService
+﻿@rendermode InteractiveServer
 
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="Icons.Material.Filled.Dashboard">
         Nadzorna plošča
     </MudNavLink>
 
-    @if (CurrentUserService.IsAuthenticated)
-    {
         @* Delavec funkcionalnosti *@
-        @if (CurrentUserService.IsWorker || CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
-        {
+        <AuthorizeView Roles="ADMIN,SUPERVISOR,WORKER">
+
             <MudNavGroup Title="Orodja" Icon="Icons.Material.Filled.Build" Expanded="false">
                 <MudNavLink Href="/tools" Icon="Icons.Material.Filled.List">
                     Seznam orodij
@@ -21,11 +19,10 @@
                     Moje rezervacije
                 </MudNavLink>
             </MudNavGroup>
-        }
+        </AuthorizeView>
 
         @* Nadzornik proizvodnje funkcionalnosti *@
-        @if (CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
-        {
+        <AuthorizeView Roles="ADMIN,SUPERVISOR">
             <MudDivider Class="my-2" />
             <MudNavGroup Title="Upravljanje" Icon="Icons.Material.Filled.ManageAccounts" Expanded="false">
                 <MudNavLink Href="/categories" Icon="Icons.Material.Filled.Category">
@@ -53,11 +50,11 @@
                     Transakcije
                 </MudNavLink>
             </MudNavGroup>
-        }
+        </AuthorizeView>
 
         @* Administrator funkcionalnosti *@
-        @if (CurrentUserService.IsAdministrator)
-        {
+
+        <AuthorizeView Roles="ADMIN">
             <MudDivider Class="my-2" />
             <MudNavGroup Title="Administracija" Icon="Icons.Material.Filled.AdminPanelSettings" Expanded="false">
                 <MudNavLink Href="/users" Icon="Icons.Material.Filled.People">
@@ -70,6 +67,5 @@
                     Revizijska sled
                 </MudNavLink>
             </MudNavGroup>
-        }
-    }
+        </AuthorizeView>
 </MudNavMenu>

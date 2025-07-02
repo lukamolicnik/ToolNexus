@@ -1,9 +1,15 @@
 ﻿namespace ToolNexus.Domain.Users
 {
-    public enum UserRole
+    public class UserRole
     {
-        Worker = 1,           // Delavec
-        ProductionSupervisor = 2,  // Nadzornik proizvodnje
-        Administrator = 3     // Administrator
+        public int Id { get; set; }
+        public required string Code { get; set; }
+        public required string Name { get; set; }
+        public string? Description { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+        // Navigation property
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
     }
 }

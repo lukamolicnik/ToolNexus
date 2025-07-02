@@ -13,6 +13,7 @@ namespace ToolNexus.Infrastructure
 
         public DbSet<Tool> Tools { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,7 +44,7 @@ namespace ToolNexus.Infrastructure
                     .IsRequired()
                     .HasMaxLength(500);
 
-                entity.Property(e => e.Role)
+                entity.Property(e => e.UserRoleId)
                     .IsRequired()
                     .HasConversion<int>();
 
@@ -58,6 +59,31 @@ namespace ToolNexus.Infrastructure
                     .IsUnique();
 
                 entity.HasIndex(e => e.Email)
+                    .IsUnique();
+
+                entity.HasOne(e => e.UserRole)
+                    .WithMany(r => r.Users)
+                    .HasForeignKey(e => e.UserRoleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<UserRole>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Code)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(500);
+
+                // Unique constraint za Name
+                entity.HasIndex(e => e.Name)
                     .IsUnique();
             });
 

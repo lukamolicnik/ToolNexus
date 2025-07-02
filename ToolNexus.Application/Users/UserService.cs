@@ -1,4 +1,8 @@
-﻿using ToolNexus.Application.Users.DTOs;
+﻿using System.Data;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
+using ToolNexus.Application.Users.DTOs;
 using ToolNexus.Domain.Users;
 
 namespace ToolNexus.Application.Users
@@ -6,12 +10,10 @@ namespace ToolNexus.Application.Users
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IAuthenticationService _authenticationService;
 
-        public UserService(IUserRepository userRepository, IAuthenticationService authenticationService)
+        public UserService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
-            _authenticationService = authenticationService;
         }
 
         public async Task<UserDto?> GetUserByIdAsync(int id)
@@ -47,8 +49,8 @@ namespace ToolNexus.Application.Users
                 FirstName = createUserDto.FirstName,
                 LastName = createUserDto.LastName,
                 Email = createUserDto.Email,
-                PasswordHash = _authenticationService.HashPassword(createUserDto.Password),
-                Role = createUserDto.Role,
+                PasswordHash = this.HashPassword(createUserDto.Password),
+                UserRoleId = createUserDto.UserRoleId,
                 IsActive = createUserDto.IsActive,
                 CreatedBy = createdBy,
                 CreatedAt = DateTime.UtcNow,
@@ -80,7 +82,7 @@ namespace ToolNexus.Application.Users
             existingUser.FirstName = updateUserDto.FirstName;
             existingUser.LastName = updateUserDto.LastName;
             existingUser.Email = updateUserDto.Email;
-            existingUser.Role = updateUserDto.Role;
+            existingUser.UserRoleId = updateUserDto.UserRoleId;
             existingUser.IsActive = updateUserDto.IsActive;
             existingUser.UpdatedBy = updatedBy;
             existingUser.UpdatedAt = DateTime.UtcNow;
@@ -88,7 +90,7 @@ namespace ToolNexus.Application.Users
             // Posodobi geslo, če je podano
             if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
             {
-                existingUser.PasswordHash = _authenticationService.HashPassword(updateUserDto.NewPassword);
+                existingUser.PasswordHash = this.HashPassword(updateUserDto.NewPassword);
             }
 
             var updatedUser = await _userRepository.UpdateUserAsync(existingUser);
@@ -108,6 +110,59 @@ namespace ToolNexus.Application.Users
         public async Task<bool> EmailExistsAsync(string email)
         {
             return await _userRepository.EmailExistsAsync(email);
+        }
+
+        public async Task<AuthenticationResult> AuthenticateAsync(LoginDto loginDto)
+        {
+            // Pridobi uporabnika po uporabniškem imenu
+            var user = await _userRepository.GetUserByUsernameAsync(loginDto.Username);
+
+            if (user == null)
+            {
+                return AuthenticationResult.FailureResult("Nepravilno uporabniško ime ali geslo");
+            }
+
+            // Preveri, če je uporabnik aktiven
+            if (!user.IsActive)
+            {
+                return AuthenticationResult.FailureResult("Uporabniški račun je onemogočen");
+            }
+
+            // Preveri geslo
+            if (!VerifyPassword(loginDto.Password, user.PasswordHash))
+            {
+                return AuthenticationResult.FailureResult("Nepravilno uporabniško ime ali geslo");
+            }
+
+            // Uspešna prijava
+            var userDto = UserDto.FromUser(user);
+            return AuthenticationResult.SuccessResult(userDto);
+        }
+
+        public string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
+        }
+
+        public bool VerifyPassword(string password, string hash)
+        {
+            var hashedPassword = HashPassword(password);
+            return hashedPassword == hash;
+        }
+
+        public async Task<UserRoleDto> GetUserRoleByIdAsync(int roleId)
+        {
+            var userRole = await _userRepository.GetUserRoleByIdAsync(roleId);
+
+            return userRole != null ? UserRoleDto.FromUserRole(userRole) : null;
+        }
+
+        public async Task<List<UserRoleDto>> GetAllUserRolesAsync()
+        {
+            var userRoles = await _userRepository.GetAllUserRolesAsync();
+            return userRoles.Select(UserRoleDto.FromUserRole).ToList();
         }
     }
 }

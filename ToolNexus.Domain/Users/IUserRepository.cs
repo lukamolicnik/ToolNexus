@@ -10,5 +10,7 @@
         Task<bool> DeleteUserAsync(int id);
         Task<bool> UsernameExistsAsync(string username);
         Task<bool> EmailExistsAsync(string email);
+        Task<UserRole?> GetUserRoleByIdAsync(int roleId);
+        Task<List<UserRole>> GetAllUserRolesAsync();
     }
 }

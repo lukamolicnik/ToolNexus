@@ -1,85 +1,97 @@
 ﻿@page "/"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authorization
 @rendermode InteractiveServer
-@inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR,WORKER")]
 
 <PageTitle>Nadzorna plošča - ToolNexus</PageTitle>
 
-@if (CurrentUserService.IsAuthenticated)
-{
-    <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">
-                Dobrodošli, @CurrentUserService.CurrentUser!.FullName
-            </MudText>
-            <MudStack Row="true" Spacing="2">
-                <MudChip Icon="@GetRoleIcon(CurrentUserService.CurrentUser.Role)"
-                         Color="@GetRoleColor(CurrentUserService.CurrentUser.Role)"
-                         Size="Size.Large"
-                         T="string">
-                    @GetRoleDisplayName(CurrentUserService.CurrentUser.Role)
-                </MudChip>
+<AuthorizeView Context="authContext">
+    <Authorized>
+        <MudStack Spacing="4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                @if (user != null)
+                {
+                    <MudText Typo="Typo.h4">
+                        Dobrodošli, @user.FullName
+                    </MudText>
+                    <MudStack Row="true" Spacing="2">
+                        <MudChip Icon="@GetRoleIcon()"
+                            Color="@GetRoleColor()"
+                            Size="Size.Large"
+                            T="string">
+                            @user.UserRole?.Name
+                        </MudChip>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h4">
+                        Nalagam...
+                    </MudText>
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                }
             </MudStack>
-        </MudStack>
 
-        @* Quick Stats *@
-        <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <div>
-                            <MudText Typo="Typo.h4" Color="Color.Primary">-</MudText>
-                            <MudText Typo="Typo.body2">Skupaj orodij</MudText>
-                        </div>
-                        <MudIcon Icon="Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Large" />
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+            @* Quick Stats *@
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <div>
+                                <MudText Typo="Typo.h4" Color="Color.Primary">-</MudText>
+                                <MudText Typo="Typo.body2">Skupaj orodij</MudText>
+                            </div>
+                            <MudIcon Icon="Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Large" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <div>
-                            <MudText Typo="Typo.h4" Color="Color.Success">-</MudText>
-                            <MudText Typo="Typo.body2">Razpoložljivih</MudText>
-                        </div>
-                        <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <div>
+                                <MudText Typo="Typo.h4" Color="Color.Success">-</MudText>
+                                <MudText Typo="Typo.body2">Razpoložljivih</MudText>
+                            </div>
+                            <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <div>
-                            <MudText Typo="Typo.h4" Color="Color.Warning">-</MudText>
-                            <MudText Typo="Typo.body2">Izposojenih</MudText>
-                        </div>
-                        <MudIcon Icon="Icons.Material.Filled.SwapHoriz" Color="Color.Warning" Size="Size.Large" />
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <div>
+                                <MudText Typo="Typo.h4" Color="Color.Warning">-</MudText>
+                                <MudText Typo="Typo.body2">Izposojenih</MudText>
+                            </div>
+                            <MudIcon Icon="Icons.Material.Filled.SwapHoriz" Color="Color.Warning" Size="Size.Large" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <div>
-                            <MudText Typo="Typo.h4" Color="Color.Info">-</MudText>
-                            <MudText Typo="Typo.body2">Rezervacij</MudText>
-                        </div>
-                        <MudIcon Icon="Icons.Material.Filled.BookmarkBorder" Color="Color.Info" Size="Size.Large" />
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <div>
+                                <MudText Typo="Typo.h4" Color="Color.Info">-</MudText>
+                                <MudText Typo="Typo.body2">Rezervacij</MudText>
+                            </div>
+                            <MudIcon Icon="Icons.Material.Filled.BookmarkBorder" Color="Color.Info" Size="Size.Large" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
 
-        @* Main Actions Grid *@
-        <MudText Typo="Typo.h5">Funkcionalnosti</MudText>
+            @* Main Actions Grid *@
+            <MudText Typo="Typo.h5">Funkcionalnosti</MudText>
 
-        <MudGrid>
-            @* Delavec funkcionalnosti *@
-            @if (CurrentUserService.IsWorker || CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
-            {
+            <MudGrid>
+                @* Delavec funkcionalnosti *@
                 <MudItem xs="12" sm="6" md="4">
                     <MudCard Elevation="3" Style="height: 100%;">
                         <MudCardContent>
@@ -98,180 +110,176 @@
                         </MudCardActions>
                     </MudCard>
                 </MudItem>
-            }
 
-            @* Nadzornik proizvodnje funkcionalnosti *@
-            @if (CurrentUserService.IsProductionSupervisor || CurrentUserService.IsAdministrator)
-            {
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.Category" Color="Color.Success" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Kategorije</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Upravljaj s kategorijami orodij in njihovo organizacijo.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Success" Href="/categories">
-                                Upravljaj
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
+                @* Nadzornik proizvodnje funkcionalnosti *@
+                <AuthorizeView Roles="ADMIN,SUPERVISOR" Context="supervisorContext">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Category" Color="Color.Success" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Kategorije</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Upravljaj s kategorijami orodij in njihovo organizacijo.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" Href="/categories">
+                                    Upravljaj
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.Inventory" Color="Color.Info" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Materiali</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Dodajaj in upravljaj z materiali ter njihovimi lastnostmi.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Info" Href="/materials">
-                                Upravljaj
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Inventory" Color="Color.Info" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Materiali</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Dodajaj in upravljaj z materiali ter njihovimi lastnostmi.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Info" Href="/materials">
+                                    Upravljaj
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.Assignment" Color="Color.Warning" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Izposoje</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Preglej trenutne izposoje in upravlja z njimi.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Warning" Href="/loans">
-                                Preglej
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Assignment" Color="Color.Warning" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Izposoje</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Preglej trenutne izposoje in upravlja z njimi.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Warning" Href="/loans">
+                                    Preglej
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%;">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.Assessment" Color="Color.Secondary" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Poročila</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Generiraj poročila o izkoriščenosti in trendih.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/reports">
-                                Generiraj
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
-            }
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Assessment" Color="Color.Secondary" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Poročila</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Generiraj poročila o izkoriščenosti in trendih.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/reports">
+                                    Generiraj
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </AuthorizeView>
 
-            @* Administrator funkcionalnosti *@
-            @if (CurrentUserService.IsAdministrator)
-            {
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%; border: 2px solid var(--mud-palette-error);">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.People" Color="Color.Error" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Uporabniki</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Upravljaj z uporabniškimi računi in vlogami.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/users">
-                                Upravljaj
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
+                @* Administrator funkcionalnosti *@
+                <AuthorizeView Roles="ADMIN" Context="adminContext">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%; border: 2px solid var(--mud-palette-error);">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.People" Color="Color.Error" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Uporabniki</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Upravljaj z uporabniškimi računi in vlogami.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/users">
+                                    Upravljaj
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
 
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Elevation="3" Style="height: 100%; border: 2px solid var(--mud-palette-error);">
-                        <MudCardContent>
-                            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="Icons.Material.Filled.Settings" Color="Color.Error" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">Nastavitve</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center">
-                                    Konfiguracija sistema in nastavitev.
-                                </MudText>
-                            </MudStack>
-                        </MudCardContent>
-                        <MudCardActions Class="justify-center">
-                            <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/settings">
-                                Nastavitve
-                            </MudButton>
-                        </MudCardActions>
-                    </MudCard>
-                </MudItem>
-            }
-        </MudGrid>
-    </MudStack>
-}
-else
-{
-    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-        <MudPaper Elevation="4" Class="pa-8">
-            <MudStack Spacing="4" AlignItems="AlignItems.Center">
-                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-                <MudText Typo="Typo.h6">Preusmerjam na prijavno stran...</MudText>
-            </MudStack>
-        </MudPaper>
-    </MudContainer>
-}
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%; border: 2px solid var(--mud-palette-error);">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Settings" Color="Color.Error" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Nastavitve</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Konfiguracija sistema in nastavitev.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/settings">
+                                    Nastavitve
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </AuthorizeView>
+            </MudGrid>
+        </MudStack>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+            <MudPaper Elevation="4" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Preusmerjam na prijavno stran...</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private UserDto user;
+
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"Dashboard initialized. IsAuthenticated: {CurrentUserService.IsAuthenticated}");
-        Console.WriteLine($"Current user: {CurrentUserService.CurrentUser?.FullName ?? "NULL"}");
+        var authState = await authenticationStateTask;
 
-        // Če uporabnik ni prijavljen, ga preusmeri na prijavno stran
-        if (!CurrentUserService.IsAuthenticated)
+        // Preverimo samo če je uporabnik prijavljen za pridobitev podatkov  
+        if (authState.User.Identity.IsAuthenticated)
         {
-            Console.WriteLine("User not authenticated, redirecting to login...");
-            await Task.Delay(1);
-            NavigationManager.NavigateTo("/login", replace: true);
+            var userId = Int32.Parse(authState.User.Identities
+                .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                .FirstOrDefault());
+
+            user = await UserService.GetUserByIdAsync(userId);
+            StateHasChanged(); // Sprožimo re-render
         }
     }
 
-    private string GetRoleDisplayName(UserRole role) => role switch
+    private Color GetRoleColor() => user?.UserRole?.Code switch
     {
-        UserRole.Administrator => "Administrator",
-        UserRole.ProductionSupervisor => "Nadzornik proizvodnje",
-        UserRole.Worker => "Delavec",
-        _ => "Neznano"
-    };
-
-    private Color GetRoleColor(UserRole role) => role switch
-    {
-        UserRole.Administrator => Color.Error,
-        UserRole.ProductionSupervisor => Color.Warning,
-        UserRole.Worker => Color.Info,
+        "ADMIN" => Color.Error,
+        "SUPERVISOR" => Color.Warning,
+        "WORKER" => Color.Info,
         _ => Color.Default
     };
 
-    private string GetRoleIcon(UserRole role) => role switch
+    private string GetRoleIcon() => user?.UserRole?.Code switch
     {
-        UserRole.Administrator => Icons.Material.Filled.AdminPanelSettings,
-        UserRole.ProductionSupervisor => Icons.Material.Filled.ManageAccounts,
-        UserRole.Worker => Icons.Material.Filled.Person,
+        "ADMIN" => Icons.Material.Filled.AdminPanelSettings,
+        "SUPERVISOR" => Icons.Material.Filled.ManageAccounts,
+        "WORKER" => Icons.Material.Filled.Person,
         _ => Icons.Material.Filled.Person
     };
 }

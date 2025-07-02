@@ -1,11 +1,11 @@
 ﻿@page "/tools"
-@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
 @inject IToolService ToolService
-@attribute [StreamRendering]
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR,WORKER")]
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
 
-<ProtectedPage RequiredRoles="@(new[] { UserRole.Worker, UserRole.ProductionSupervisor, UserRole.Administrator })">
+<AuthorizeView Roles="ADMIN,SUPERVISOR,WORKER">
     <MudStack Spacing="4">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">Orodja</MudText>
@@ -21,6 +21,7 @@
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
                     <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
                     <MudText Typo="Typo.h6">Nalagam orodja...</MudText>
+                    <MudText Typo="Typo.body2">Debug: tools = @(tools?.Count.ToString() ?? "null")</MudText>
                 </MudStack>
             </MudPaper>
         }
@@ -62,45 +63,42 @@
                     <Columns>
                         <PropertyColumn Property="x => x.Id" Title="ID" />
                         <TemplateColumn Title="Koda">
-                            <CellTemplate>
-                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@context.Item.Code</MudChip>
+                            <CellTemplate Context="tool">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@tool.Item.Code</MudChip>
                             </CellTemplate>
                         </TemplateColumn>
                         <PropertyColumn Property="x => x.Name" Title="Naziv" />
                         <PropertyColumn Property="x => x.Description" Title="Opis">
-                            <CellTemplate>
-                                <MudText>@(context.Item.Description ?? "-")</MudText>
+                            <CellTemplate Context="tool">
+                                <MudText>@(tool.Item.Description ?? "-")</MudText>
                             </CellTemplate>
                         </PropertyColumn>
                         <PropertyColumn Property="x => x.Version" Title="Verzija">
-                            <CellTemplate>
-                                <MudText>@(context.Item.Version ?? "-")</MudText>
+                            <CellTemplate Context="tool">
+                                <MudText>@(tool.Item.Version ?? "-")</MudText>
                             </CellTemplate>
                         </PropertyColumn>
                         <PropertyColumn Property="x => x.CreatedBy" Title="Ustvaril">
-                            <CellTemplate>
-                                <MudText>@(context.Item.CreatedBy ?? "-")</MudText>
+                            <CellTemplate Context="tool">
+                                <MudText>@(tool.Item.CreatedBy ?? "-")</MudText>
                             </CellTemplate>
                         </PropertyColumn>
                         <PropertyColumn Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
                         <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
-                            <CellTemplate>
+                            <CellTemplate Context="tool">
                                 <MudStack Row="true" Spacing="1">
-                                    <MudTooltip Text="Poglej podrobnosti">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
-                                                     Color="Color.Primary" 
-                                                     Size="Size.Small" />
-                                    </MudTooltip>
-                                    <MudTooltip Text="Uredi">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                                     Color="Color.Warning" 
-                                                     Size="Size.Small" />
-                                    </MudTooltip>
-                                    <MudTooltip Text="Izposodi">
-                                        <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
-                                                     Color="Color.Success" 
-                                                     Size="Size.Small" />
-                                    </MudTooltip>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                                 Color="Color.Primary" 
+                                                 Size="Size.Small"
+                                                 Title="Poglej podrobnosti" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                 Color="Color.Warning" 
+                                                 Size="Size.Small"
+                                                 Title="Uredi" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
+                                                 Color="Color.Success" 
+                                                 Size="Size.Small"
+                                                 Title="Izposodi" />
                                 </MudStack>
                             </CellTemplate>
                         </TemplateColumn>
@@ -112,10 +110,10 @@
             </MudPaper>
         }
     </MudStack>
-</ProtectedPage>
+</AuthorizeView>
 
 @code {
-    private List<Tool> tools = new List<Tool>();
+    private List<Tool>? tools = null;
     private string searchString = "";
 
     private Func<Tool, bool> _quickFilter => x =>
@@ -140,10 +138,18 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await ToolService.GetAllToolsAsync();
-        if (result is not null)
+        Console.WriteLine("=== Tools OnInitializedAsync START ===");
+        try
         {
-            tools = result;
+            var result = await ToolService.GetAllToolsAsync();
+            Console.WriteLine($"Tools loaded: {result?.Count ?? 0}");
+            tools = result ?? new List<Tool>();
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tools: {ex.Message}");
+            tools = new List<Tool>(); // Prevent infinite loading
+        }
+        Console.WriteLine("=== Tools OnInitializedAsync END ===");
     }
 }

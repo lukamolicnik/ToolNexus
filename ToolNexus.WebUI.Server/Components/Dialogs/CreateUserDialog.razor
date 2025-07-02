@@ -1,7 +1,7 @@
 ﻿@using MudBlazor
 @inject IUserService UserService
-@inject ICurrentUserService CurrentUserService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
 
 <MudDialog>
     <DialogContent>
@@ -9,60 +9,54 @@
             <DataAnnotationsValidator />
             <MudStack Spacing="3">
                 <MudTextField @bind-Value="createUserDto.Username"
-                              For="@(() => createUserDto.Username)"
-                              Label="Uporabniško ime"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="Icons.Material.Filled.Person" />
+                For="@(() => createUserDto.Username)"
+                Label="Uporabniško ime"
+                Variant="Variant.Outlined"
+                Required="true"
+                Adornment="Adornment.Start"
+                AdornmentIcon="Icons.Material.Filled.Person" />
 
                 <MudStack Row="true" Spacing="2">
                     <MudTextField @bind-Value="createUserDto.FirstName"
-                                  For="@(() => createUserDto.FirstName)"
-                                  Label="Ime"
-                                  Variant="Variant.Outlined"
-                                  Required="true" />
+                    For="@(() => createUserDto.FirstName)"
+                    Label="Ime"
+                    Variant="Variant.Outlined"
+                    Required="true" />
 
                     <MudTextField @bind-Value="createUserDto.LastName"
-                                  For="@(() => createUserDto.LastName)"
-                                  Label="Priimek"
-                                  Variant="Variant.Outlined"
-                                  Required="true" />
+                    For="@(() => createUserDto.LastName)"
+                    Label="Priimek"
+                    Variant="Variant.Outlined"
+                    Required="true" />
                 </MudStack>
 
                 <MudTextField @bind-Value="createUserDto.Email"
-                              For="@(() => createUserDto.Email)"
-                              Label="Email"
-                              Variant="Variant.Outlined"
-                              InputType="InputType.Email"
-                              Required="true"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="Icons.Material.Filled.Email" />
+                For="@(() => createUserDto.Email)"
+                Label="Email"
+                Variant="Variant.Outlined"
+                InputType="InputType.Email"
+                Required="true"
+                Adornment="Adornment.Start"
+                AdornmentIcon="Icons.Material.Filled.Email" />
 
-                <MudSelect @bind-Value="createUserDto.Role"
-                           For="@(() => createUserDto.Role)"
-                           Label="Vloga"
-                           Variant="Variant.Outlined"
-                           Required="true"
-                           AnchorOrigin="Origin.BottomCenter">
-                    <MudSelectItem Value="UserRole.Worker">
-                        <div style="display: flex; align-items: center">
-                            <MudIcon Icon="Icons.Material.Filled.Person" Style="margin-right: 10px" />
-                            Delavec
-                        </div>
-                    </MudSelectItem>
-                    <MudSelectItem Value="UserRole.ProductionSupervisor">
-                        <div style="display: flex; align-items: center">
-                            <MudIcon Icon="Icons.Material.Filled.ManageAccounts" Style="margin-right: 10px" />
-                            Nadzornik proizvodnje
-                        </div>
-                    </MudSelectItem>
-                    <MudSelectItem Value="UserRole.Administrator">
-                        <div style="display: flex; align-items: center">
-                            <MudIcon Icon="Icons.Material.Filled.AdminPanelSettings" Style="margin-right: 10px" />
-                            Administrator
-                        </div>
-                    </MudSelectItem>
+                <MudSelect @bind-Value="createUserDto.UserRoleId"
+                For="@(() => createUserDto.UserRoleId)"
+                Label="Vloga"
+                Variant="Variant.Outlined"
+                Required="true"
+                AnchorOrigin="Origin.BottomCenter">
+                    @if (userRoles != null)
+                    {
+                        @foreach (var role in userRoles)
+                        {
+                            <MudSelectItem Value="@role.Id">
+                                <div style="display: flex; align-items: center">
+                                    <MudIcon Icon="@GetRoleIcon(role.Code)" Style="margin-right: 10px" />
+                                    @role.Name
+                                </div>
+                            </MudSelectItem>
+                        }
+                    }
                 </MudSelect>
 
                 <MudTextField @bind-Value="createUserDto.Password"
@@ -101,17 +95,74 @@
 </MudDialog>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private UserDto user;
+
     [Parameter] public Func<Task>? OnUserCreated { get; set; }
 
     private CreateUserDto createUserDto = new();
     private bool isSubmitting = false;
+    private List<UserRoleDto>? userRoles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+
+        // Če uporabnik ni prijavljen, ga preusmeri na prijavno stran
+        if (!authState.User.Identity.IsAuthenticated)
+        {
+            await Task.Delay(1);
+            NavigationManager.NavigateTo("/login", replace: true);
+        }
+        else
+        {
+            var userId = Int32.Parse(authState.User.Identities
+                .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                .FirstOrDefault());
+
+            user = await UserService.GetUserByIdAsync(userId);
+            await LoadUserRoles();
+            StateHasChanged(); // Sprožimo re-render
+        }
+    }
+
+    private async Task LoadUserRoles()
+    {
+        try
+        {
+            userRoles = await UserService.GetAllUserRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju vlog: {ex.Message}", Severity.Error);
+            userRoles = new List<UserRoleDto>();
+        }
+    }
+
+    private string GetRoleIcon(string roleCode)
+    {
+        return roleCode switch
+        {
+            "ADMIN" => Icons.Material.Filled.AdminPanelSettings,
+            "SUPERVISOR" => Icons.Material.Filled.ManageAccounts,
+            "WORKER" => Icons.Material.Filled.Person,
+            _ => Icons.Material.Filled.Person
+        };
+    }
 
     private async Task HandleSubmit()
     {
         isSubmitting = true;
         try
         {
-            await UserService.CreateUserAsync(createUserDto, CurrentUserService.CurrentUser!.Username);
+            if (user == null)
+            {
+                Snackbar.Add("Napaka: uporabnik ni naložen", Severity.Error);
+                return;
+            }
+            await UserService.CreateUserAsync(createUserDto, user.Username);
             Snackbar.Add($"Uporabnik {createUserDto.FirstName} {createUserDto.LastName} uspešno ustvarjen.", Severity.Success);
 
             if (OnUserCreated != null)

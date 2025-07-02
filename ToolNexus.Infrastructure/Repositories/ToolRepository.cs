@@ -10,14 +10,17 @@ namespace ToolNexus.Infrastructure.Repositories
 {
     public class ToolRepository : IToolRepository
     {
-        private readonly ApplicationDbContext _context;
-        public ToolRepository(ApplicationDbContext context)
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+        
+        public ToolRepository(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
+        
         public async Task<List<Tool>> GetAllToolsAsync()
         {
-            return await _context.Tools.ToListAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Tools.ToListAsync();
         }
     }
 }

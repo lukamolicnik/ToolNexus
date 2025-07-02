@@ -12,13 +12,56 @@ namespace ToolNexus.Infrastructure
         public static async Task SeedDataAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
+            
+            using var context = await contextFactory.CreateDbContextAsync();
 
             try
             {
                 // Zagotovi, da baza obstaja
                 await context.Database.EnsureCreatedAsync();
+
+                // Preveri, če že obstajajo role
+                if (await context.UserRoles.AnyAsync())
+                {
+                    logger.LogInformation("Vloge že obstajajo, preskačem seed podatke.");
+                    return;
+                }
+
+                var adminRole = new UserRole
+                {
+                    Name = "Administrator",
+                    Code = "ADMIN",
+                    Description = "Sistem administrator",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                
+                var supervisorRole = new UserRole
+                {
+                    Name = "Nadzornik Proizvodnje",
+                    Code = "SUPERVISOR",
+                    Description = "Nadzornik proizvodnje",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var workerRole = new UserRole
+                {
+                    Name = "Delavec",
+                    Code = "WORKER",
+                    Description = "Osnovni delavec",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                context.UserRoles.Add(adminRole);
+                context.UserRoles.Add(supervisorRole);
+                context.UserRoles.Add(workerRole);
+
+                await context.SaveChangesAsync();
+
 
                 // Preveri, če že obstajajo uporabniki
                 if (await context.Users.AnyAsync())
@@ -35,7 +78,7 @@ namespace ToolNexus.Infrastructure
                     LastName = "Administrator",
                     Email = "admin@toolnexus.si",
                     PasswordHash = HashPassword("admin123"), // Privzeto geslo
-                    Role = UserRole.Administrator,
+                    UserRoleId = adminRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
                     CreatedAt = DateTime.UtcNow,
@@ -52,7 +95,7 @@ namespace ToolNexus.Infrastructure
                     LastName = "Nadzornik",
                     Email = "supervisor@toolnexus.si",
                     PasswordHash = HashPassword("supervisor123"),
-                    Role = UserRole.ProductionSupervisor,
+                    UserRoleId = supervisorRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
                     CreatedAt = DateTime.UtcNow,
@@ -69,7 +112,7 @@ namespace ToolNexus.Infrastructure
                     LastName = "Delavec",
                     Email = "worker@toolnexus.si",
                     PasswordHash = HashPassword("worker123"),
-                    Role = UserRole.Worker,
+                    UserRoleId = workerRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
                     CreatedAt = DateTime.UtcNow,

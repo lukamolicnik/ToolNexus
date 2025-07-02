@@ -9,7 +9,7 @@ namespace ToolNexus.Application.Users.DTOs
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public UserRole Role { get; set; }
+        public UserRole UserRole { get; set; }
         public bool IsActive { get; set; }
         public string FullName { get; set; } = string.Empty;
 
@@ -22,7 +22,7 @@ namespace ToolNexus.Application.Users.DTOs
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
-                Role = user.Role,
+                UserRole = user.UserRole,
                 IsActive = user.IsActive,
                 FullName = user.FullName
             };

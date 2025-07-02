@@ -12,7 +12,6 @@ namespace ToolNexus.Application
             services.AddScoped<IToolService, ToolService>();
 
             // User services
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IUserService, UserService>();
 
             return services;

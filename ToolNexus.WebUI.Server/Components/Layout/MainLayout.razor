@@ -1,57 +1,73 @@
-﻿@inherits LayoutComponentBase
-@inject ICurrentUserService CurrentUserService
+﻿@using Microsoft.AspNetCore.Authentication
+@using System.Security.Claims
+@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
 
 <MudThemeProvider Theme="customTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@if (CurrentUserService.IsAuthenticated)
-{
-    <MudLayout>
-        <MudAppBar Elevation="1">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-            <MudSpacer />
-            <MudText Typo="Typo.h5" Class="ml-3">ToolNexus</MudText>
-            <MudSpacer />
+<AuthorizeView>
+    <Authorized>
+        <MudLayout>
+            <MudAppBar Elevation="1">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                <MudSpacer />
+                <MudText Typo="Typo.h5" Class="ml-3">ToolNexus</MudText>
+                <MudSpacer />
 
-            @* Uporabniške informacije in odjava *@
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudText Typo="Typo.body2">@CurrentUserService.CurrentUser!.FullName</MudText>
-                <MudChip Size="Size.Small"
-                         Color="@GetRoleColor(CurrentUserService.CurrentUser.Role)"
-                         T="string">
-                    @GetRoleDisplayName(CurrentUserService.CurrentUser.Role)
-                </MudChip>
-                <MudIconButton Icon="@Icons.Material.Filled.Logout"
-                               Color="Color.Inherit"
-                               OnClick="HandleLogout"
-                               Title="Odjavi se" />
-            </MudStack>
-        </MudAppBar>
+                @* Uporabniške informacije in odjava *@
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    @if (user != null)
+                    {
+                        <MudText Typo="Typo.body2">@user.FullName</MudText>
+                        <MudChip Size="Size.Small"
+                        Color="@GetRoleColor()"
+                        T="string">
+                            @user.UserRole?.Name
+                        </MudChip>
+                        <MudTooltip Text="Odjavi se">
+                            <a href="/logout" style="color: inherit; text-decoration: none;">
+                                <MudIcon Icon="@Icons.Material.Filled.Logout" />
+                            </a>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <MudText Typo="Typo.body2">Nalagam...</MudText>
+                    }
+                </MudStack>
+            </MudAppBar>
 
-        <MudDrawer @bind-Open="drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
-            <NavMenu />
-        </MudDrawer>
+            <MudDrawer @bind-Open="drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+                <NavMenu />
+            </MudDrawer>
 
+            <MudMainContent>
+                <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
+    </Authorized>
+    <NotAuthorized>
         <MudMainContent>
-            <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-                @Body
-            </MudContainer>
+            @Body
         </MudMainContent>
-    </MudLayout>
-}
-else
-{
-    <MudMainContent>
-        @Body
-    </MudMainContent>
-}
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; }
+
+    private UserDto user;
+
     bool drawerOpen = true;
-    
+
     private MudTheme customTheme = new MudTheme()
     {
         PaletteLight = new PaletteLight()
@@ -67,31 +83,31 @@ else
         }
     };
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Preverimo samo če je uporabnik prijavljen za pridobitev podatkov
+        if (HttpContext.User.Identity.IsAuthenticated)
+        {
+            var userId = Int32.Parse(HttpContext.User.Identities
+                .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                .FirstOrDefault());
+
+            user = await UserService.GetUserByIdAsync(userId);
+            StateHasChanged(); // Sprožimo re-render
+        }
+    }
+
     void DrawerToggle()
     {
         drawerOpen = !drawerOpen;
     }
 
-    private async Task HandleLogout()
-    {
-        Console.WriteLine("MainLayout logout clicked");
-        await CurrentUserService.ClearCurrentUserAsync();
-        NavigationManager.NavigateTo("/login", replace: true);
-    }
 
-    private string GetRoleDisplayName(UserRole role) => role switch
+    private Color GetRoleColor() => user?.UserRole?.Code switch
     {
-        UserRole.Administrator => "Administrator",
-        UserRole.ProductionSupervisor => "Nadzornik proizvodnje",
-        UserRole.Worker => "Delavec",
-        _ => "Neznano"
-    };
-
-    private Color GetRoleColor(UserRole role) => role switch
-    {
-        UserRole.Administrator => Color.Error,
-        UserRole.ProductionSupervisor => Color.Warning,
-        UserRole.Worker => Color.Info,
+        "ADMIN" => Color.Error,
+        "SUPERVISOR" => Color.Warning,
+        "WORKER" => Color.Info,
         _ => Color.Default
     };
 }

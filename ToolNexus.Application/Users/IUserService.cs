@@ -12,5 +12,11 @@ namespace ToolNexus.Application.Users
         Task<bool> DeleteUserAsync(int id);
         Task<bool> UsernameExistsAsync(string username);
         Task<bool> EmailExistsAsync(string email);
+
+        Task<AuthenticationResult> AuthenticateAsync(LoginDto loginDto);
+        string HashPassword(string password);
+        bool VerifyPassword(string password, string hash);
+        Task<UserRoleDto> GetUserRoleByIdAsync(int roleId);
+        Task<List<UserRoleDto>> GetAllUserRolesAsync();
     }
 }

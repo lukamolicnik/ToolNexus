@@ -12,7 +12,8 @@ namespace ToolNexus.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
+            // Use DbContextFactory for thread-safe DbContext creation
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             // Repository registrations

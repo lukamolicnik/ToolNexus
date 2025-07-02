@@ -1,14 +1,14 @@
 ﻿@page "/users"
-@rendermode InteractiveServer
 @inject IUserService UserService
-@inject ICurrentUserService CurrentUserService
 @inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "ADMIN")]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Uporabniki - ToolNexus</PageTitle>
 
-<ProtectedPage RequiredRoles="@(new[] { UserRole.Administrator })">
-    <MudStack Spacing="4">
+<MudStack Spacing="4">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">Upravljanje uporabnikov</MudText>
             <MudStack Row="true" Spacing="2">
@@ -32,6 +32,7 @@
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
                     <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
                     <MudText Typo="Typo.h6">Nalagam uporabnike...</MudText>
+                    <MudText Typo="Typo.body2">Debug: users = @(users?.Count.ToString() ?? "null"), user = @(user?.Username ?? "null")</MudText>
                 </MudStack>
             </MudPaper>
         }
@@ -63,47 +64,45 @@
                     <Columns>
                         <PropertyColumn Property="x => x.Id" Title="ID" />
                         <TemplateColumn Title="Uporabniško ime">
-                            <CellTemplate>
-                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@context.Item.Username</MudChip>
+                            <CellTemplate Context="cellContext">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@cellContext.Item.Username</MudChip>
                             </CellTemplate>
                         </TemplateColumn>
                         <PropertyColumn Property="x => x.FullName" Title="Ime in priimek" />
                         <PropertyColumn Property="x => x.Email" Title="Email" />
                         <TemplateColumn Title="Vloga" Sortable="true">
-                            <CellTemplate>
+                            <CellTemplate Context="cellContext">
                                 <MudChip T="string" Size="Size.Small" 
-                                        Color="@GetRoleColor(context.Item.Role)"
-                                        Icon="@GetRoleIcon(context.Item.Role)">
-                                    @GetRoleDisplayName(context.Item.Role)
+                                        Color="@GetRoleColor(cellContext.Item.UserRole?.Code)"
+                                        Icon="@GetRoleIcon(cellContext.Item.UserRole?.Code)">
+                                    @(cellContext.Item.UserRole?.Name ?? "N/A")
                                 </MudChip>
                             </CellTemplate>
                         </TemplateColumn>
                         <TemplateColumn Title="Status" Sortable="true">
-                            <CellTemplate>
+                            <CellTemplate Context="cellContext">
                                 <MudChip T="string" Size="Size.Small" 
-                                        Color="@(context.Item.IsActive ? Color.Success : Color.Error)"
-                                        Icon="@(context.Item.IsActive ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Block)">
-                                    @(context.Item.IsActive ? "Aktiven" : "Neaktiven")
+                                        Color="@(cellContext.Item.IsActive ? Color.Success : Color.Error)"
+                                        Icon="@(cellContext.Item.IsActive ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Block)">
+                                    @(cellContext.Item.IsActive ? "Aktiven" : "Neaktiven")
                                 </MudChip>
                             </CellTemplate>
                         </TemplateColumn>
                         <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
-                            <CellTemplate>
+                            <CellTemplate Context="cellContext">
                                 <MudStack Row="true" Spacing="1">
-                                    <MudTooltip Text="Uredi uporabnika">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                                     Color="Color.Warning" 
-                                                     Size="Size.Small"
-                                                     OnClick="() => ShowEditUserForm(context.Item)" />
-                                    </MudTooltip>
-                                    @if (CurrentUserService.CurrentUser != null && context.Item.Id != CurrentUserService.CurrentUser.Id)
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                                 Color="Color.Warning" 
+                                                 Size="Size.Small"
+                                                 Title="Uredi uporabnika"
+                                                 OnClick="() => ShowEditUserForm(cellContext.Item)" />
+                                    @if (user != null && cellContext.Item.Id != user.Id)
                                     {
-                                        <MudTooltip Text="Izbriši uporabnika">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                                         Color="Color.Error" 
-                                                         Size="Size.Small"
-                                                         OnClick="() => ShowDeleteConfirmation(context.Item)" />
-                                        </MudTooltip>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                     Color="Color.Error" 
+                                                     Size="Size.Small"
+                                                     Title="Izbriši uporabnika"
+                                                     OnClick="() => ShowDeleteConfirmation(cellContext.Item)" />
                                     }
                                 </MudStack>
                             </CellTemplate>
@@ -117,10 +116,10 @@
         }
     </MudStack>
 
-    @* Create User Form Overlay *@
+    @* Create User Form Dialog *@
     @if (showCreateForm)
     {
-        <MudOverlay Visible="true" DarkBackground="true" ZIndex="9999">
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
             <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
                 <MudStack Spacing="3">
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
@@ -158,14 +157,18 @@
                                           InputType="InputType.Email"
                                           Required="true" />
 
-                            <MudSelect @bind-Value="createUserDto.Role"
-                                      For="@(() => createUserDto.Role)"
+                            <MudSelect @bind-Value="createUserDto.UserRoleId"
+                                      For="@(() => createUserDto.UserRoleId)"
                                       Label="Vloga"
                                       Variant="Variant.Outlined"
                                       Required="true">
-                                <MudSelectItem Value="UserRole.Worker">Delavec</MudSelectItem>
-                                <MudSelectItem Value="UserRole.ProductionSupervisor">Nadzornik proizvodnje</MudSelectItem>
-                                <MudSelectItem Value="UserRole.Administrator">Administrator</MudSelectItem>
+                                @if (userRoles != null)
+                                {
+                                    @foreach (var role in userRoles)
+                                    {
+                                        <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                                    }
+                                }
                             </MudSelect>
 
                             <MudTextField @bind-Value="createUserDto.Password"
@@ -196,12 +199,12 @@
                     </EditForm>
                 </MudStack>
             </MudPaper>
-        </MudOverlay>
+        </div>
     }
-</ProtectedPage>
 
 @code {
     private List<UserDto>? users;
+    private List<UserRoleDto>? userRoles;
     private string searchString = "";
     private bool showCreateForm = false;
     private bool isSubmitting = false;
@@ -225,21 +228,90 @@
         return false;
     };
 
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private UserDto user;
+
     protected override async Task OnInitializedAsync()
     {
-        createEditContext = new EditContext(createUserDto);
-        await LoadUsers();
+        Console.WriteLine("=== OnInitializedAsync START ===");
+        try
+        {
+            var authState = await authenticationStateTask;
+            Console.WriteLine($"Auth state: {authState.User.Identity.IsAuthenticated}");
+
+            // Preverimo samo če je uporabnik prijavljen za pridobitev podatkov
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var userId = Int32.Parse(authState.User.Identities
+                    .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                    .FirstOrDefault());
+
+                Console.WriteLine($"Loading user with ID: {userId}");
+                user = await UserService.GetUserByIdAsync(userId);
+                Console.WriteLine($"User loaded: {user?.Username}");
+                
+                Console.WriteLine("Loading users...");
+                await LoadUsers();
+                Console.WriteLine($"Users loaded, count: {users?.Count}");
+                
+                Console.WriteLine("Loading user roles...");
+                await LoadUserRoles();
+                Console.WriteLine($"User roles loaded, count: {userRoles?.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnInitializedAsync error: {ex.Message}");
+            Snackbar.Add($"Napaka pri inicializaciji: {ex.Message}", Severity.Error);
+        }
+        Console.WriteLine("=== OnInitializedAsync END ===");
     }
+
+    private Color GetRoleColor(string? roleCode) => roleCode switch
+    {
+        "ADMIN" => Color.Error,
+        "SUPERVISOR" => Color.Warning,
+        "WORKER" => Color.Info,
+        _ => Color.Default
+    };
+
+    private string GetRoleIcon(string? roleCode) => roleCode switch
+    {
+        "ADMIN" => Icons.Material.Filled.AdminPanelSettings,
+        "SUPERVISOR" => Icons.Material.Filled.ManageAccounts,
+        "WORKER" => Icons.Material.Filled.Person,
+        _ => Icons.Material.Filled.Person
+    };
 
     private async Task LoadUsers()
     {
         try
         {
             users = await UserService.GetAllUsersAsync();
+            Console.WriteLine($"Loaded {users?.Count ?? 0} users");
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Error loading users: {ex.Message}");
             Snackbar.Add($"Napaka pri nalaganju uporabnikov: {ex.Message}", Severity.Error);
+            users = new List<UserDto>(); // Prevent infinite loading
+        }
+    }
+
+    private async Task LoadUserRoles()
+    {
+        try
+        {
+            userRoles = await UserService.GetAllUserRolesAsync();
+            Console.WriteLine($"Loaded {userRoles?.Count ?? 0} user roles");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user roles: {ex.Message}");
+            Snackbar.Add($"Napaka pri nalaganju vlog: {ex.Message}", Severity.Error);
+            userRoles = new List<UserRoleDto>(); // Prevent infinite loading
         }
     }
 
@@ -261,7 +333,12 @@
         isSubmitting = true;
         try
         {
-            await UserService.CreateUserAsync(createUserDto, CurrentUserService.CurrentUser!.Username);
+            if (user == null)
+            {
+                Snackbar.Add("Napaka: uporabnik ni naložen", Severity.Error);
+                return;
+            }
+            await UserService.CreateUserAsync(createUserDto, user.Username);
             Snackbar.Add($"Uporabnik {createUserDto.FirstName} {createUserDto.LastName} uspešno ustvarjen.", Severity.Success);
             HideCreateForm();
             await LoadUsers();
@@ -285,28 +362,4 @@
     {
         Snackbar.Add("Delete funkcionalnost bo dodana v naslednji fazi", Severity.Info);
     }
-
-    private Color GetRoleColor(UserRole role) => role switch
-    {
-        UserRole.Administrator => Color.Error,
-        UserRole.ProductionSupervisor => Color.Warning,
-        UserRole.Worker => Color.Info,
-        _ => Color.Default
-    };
-
-    private string GetRoleIcon(UserRole role) => role switch
-    {
-        UserRole.Administrator => Icons.Material.Filled.AdminPanelSettings,
-        UserRole.ProductionSupervisor => Icons.Material.Filled.ManageAccounts,
-        UserRole.Worker => Icons.Material.Filled.Person,
-        _ => Icons.Material.Filled.Person
-    };
-
-    private string GetRoleDisplayName(UserRole role) => role switch
-    {
-        UserRole.Administrator => "Administrator",
-        UserRole.ProductionSupervisor => "Nadzornik",
-        UserRole.Worker => "Delavec",
-        _ => "Neznano"
-    };
 }
