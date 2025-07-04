@@ -1,0 +1,175 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+@if (IsVisible)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">@(IsEdit ? "Uredi uporabnika" : "Dodaj novega uporabnika")</MudText>
+                    <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
+                </MudStack>
+
+                @if (isSubmitting)
+                {
+                    <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="pa-4">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                        <MudText Typo="Typo.body1">@(IsEdit ? "Posodabljam uporabnika..." : "Ustvarjam uporabnika...")</MudText>
+                    </MudStack>
+                }
+                else
+                {
+                    <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <MudStack Spacing="3">
+                            
+                            <MudTextField @bind-Value="userModel.Username"
+                                          For="@(() => userModel.Username)"
+                                          Label="Uporabniško ime"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          Disabled="@IsEdit" />
+
+                            <MudStack Row="true" Spacing="2">
+                                <MudTextField @bind-Value="userModel.FirstName"
+                                              For="@(() => userModel.FirstName)"
+                                              Label="Ime"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+
+                                <MudTextField @bind-Value="userModel.LastName"
+                                              For="@(() => userModel.LastName)"
+                                              Label="Priimek"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+                            </MudStack>
+
+                            <MudTextField @bind-Value="userModel.Email"
+                                          For="@(() => userModel.Email)"
+                                          Label="Email"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email"
+                                          Required="true" />
+
+                            <MudSelect @bind-Value="userModel.UserRoleId"
+                                      For="@(() => userModel.UserRoleId)"
+                                      Label="Vloga"
+                                      Variant="Variant.Outlined"
+                                      Required="true">
+                                @if (UserRoles != null)
+                                {
+                                    @foreach (var role in UserRoles)
+                                    {
+                                        <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+
+                            @if (!IsEdit)
+                            {
+                                <MudTextField @bind-Value="userModel.Password"
+                                              For="@(() => userModel.Password)"
+                                              Label="Geslo"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Password"
+                                              Required="true" />
+                            }
+
+                            <MudCheckBox @bind-Value="userModel.IsActive"
+                                        Label="Aktiven uporabnik"
+                                        Color="Color.Primary" />
+
+                            <ValidationSummary />
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                                <MudButton OnClick="HandleCancel">Prekliči</MudButton>
+                                <MudButton ButtonType="ButtonType.Submit" 
+                                          Color="Color.Primary" 
+                                          Variant="Variant.Filled"
+                                          Disabled="isSubmitting">
+                                    @(IsEdit ? "Posodobi" : "Ustvari")
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </EditForm>
+                }
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public UserDto? User { get; set; }
+    [Parameter] public List<UserRoleDto>? UserRoles { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+    
+    private CreateUserDto userModel = new();
+    private EditContext editContext = default!;
+    private bool isSubmitting = false;
+    
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            if (IsEdit && User != null)
+            {
+                userModel = new CreateUserDto
+                {
+                    Username = User.Username,
+                    FirstName = User.FirstName,
+                    LastName = User.LastName,
+                    Email = User.Email,
+                    UserRoleId = User.UserRole?.Id ?? 0,
+                    IsActive = User.IsActive,
+                    Password = ""
+                };
+            }
+            else
+            {
+                userModel = new CreateUserDto();
+            }
+            
+            editContext = new EditContext(userModel);
+        }
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+            
+            if (IsEdit && User != null)
+            {
+                // TODO: Implement UpdateUserAsync in UserService
+                await Task.Delay(1000); // Simulate API call
+                Snackbar.Add("Uporabnik je bil uspešno posodobljen.", Severity.Success);
+            }
+            else
+            {
+                await UserService.CreateUserAsync(userModel, "system");
+                Snackbar.Add("Uporabnik je bil uspešno ustvarjen.", Severity.Success);
+            }
+            
+            await OnResult.InvokeAsync(true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    
+    private async Task HandleCancel()
+    {
+        await OnResult.InvokeAsync(false);
+    }
+}

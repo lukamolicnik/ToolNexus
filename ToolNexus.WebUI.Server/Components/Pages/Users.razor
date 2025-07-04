@@ -1,21 +1,27 @@
-﻿@page "/users"
+@page "/users"
+@attribute [Authorize(Roles = "ADMIN")]
 @inject IUserService UserService
 @inject ISnackbar Snackbar
-@inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "ADMIN")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.WebUI.Server.Components.Shared
 
 <PageTitle>Uporabniki - ToolNexus</PageTitle>
 
-<MudStack Spacing="4">
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="4">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">Upravljanje uporabnikov</MudText>
             <MudStack Row="true" Spacing="2">
                 <MudButton Variant="Variant.Filled" 
                           Color="Color.Primary" 
                           StartIcon="@Icons.Material.Filled.PersonAdd"
-                          OnClick="ShowCreateUserForm">
+                          OnClick="CreateUser">
                     Dodaj uporabnika
                 </MudButton>
                 <MudButton Variant="Variant.Outlined" 
@@ -32,241 +38,144 @@
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
                     <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
                     <MudText Typo="Typo.h6">Nalagam uporabnike...</MudText>
-                    <MudText Typo="Typo.body2">Debug: users = @(users?.Count.ToString() ?? "null"), user = @(user?.Username ?? "null")</MudText>
                 </MudStack>
             </MudPaper>
         }
         else
         {
-            <MudPaper Elevation="2">
-                <MudToolBar>
-                    <MudIcon Icon="Icons.Material.Filled.People" />
-                    <MudText Typo="Typo.h6" Class="ml-3">Seznam uporabnikov</MudText>
-                    <MudSpacer />
-                    <MudTextField @bind-Value="searchString" 
-                                 Placeholder="Iskanje..." 
-                                 Adornment="Adornment.Start" 
-                                 AdornmentIcon="Icons.Material.Filled.Search" 
-                                 IconSize="Size.Medium" 
-                                 Immediate="true"
-                                 Class="mt-0" />
-                </MudToolBar>
-                
-                <MudDataGrid Items="@users" 
-                           Filterable="true" 
-                           FilterMode="DataGridFilterMode.ColumnFilterRow"
-                           SortMode="SortMode.Multiple" 
-                           Groupable="false"
-                           QuickFilter="@_quickFilter"
-                           Hover="true"
-                           Striped="true"
-                           Dense="true">
-                    <Columns>
-                        <PropertyColumn Property="x => x.Id" Title="ID" />
-                        <TemplateColumn Title="Uporabniško ime">
-                            <CellTemplate Context="cellContext">
-                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@cellContext.Item.Username</MudChip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                        <PropertyColumn Property="x => x.FullName" Title="Ime in priimek" />
-                        <PropertyColumn Property="x => x.Email" Title="Email" />
-                        <TemplateColumn Title="Vloga" Sortable="true">
-                            <CellTemplate Context="cellContext">
-                                <MudChip T="string" Size="Size.Small" 
-                                        Color="@GetRoleColor(cellContext.Item.UserRole?.Code)"
-                                        Icon="@GetRoleIcon(cellContext.Item.UserRole?.Code)">
-                                    @(cellContext.Item.UserRole?.Name ?? "N/A")
-                                </MudChip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                        <TemplateColumn Title="Status" Sortable="true">
-                            <CellTemplate Context="cellContext">
-                                <MudChip T="string" Size="Size.Small" 
-                                        Color="@(cellContext.Item.IsActive ? Color.Success : Color.Error)"
-                                        Icon="@(cellContext.Item.IsActive ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Block)">
-                                    @(cellContext.Item.IsActive ? "Aktiven" : "Neaktiven")
-                                </MudChip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                        <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
-                            <CellTemplate Context="cellContext">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                                 Color="Color.Warning" 
-                                                 Size="Size.Small"
-                                                 Title="Uredi uporabnika"
-                                                 OnClick="() => ShowEditUserForm(cellContext.Item)" />
-                                    @if (user != null && cellContext.Item.Id != user.Id)
-                                    {
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                                     Color="Color.Error" 
-                                                     Size="Size.Small"
-                                                     Title="Izbriši uporabnika"
-                                                     OnClick="() => ShowDeleteConfirmation(cellContext.Item)" />
-                                    }
-                                </MudStack>
-                            </CellTemplate>
-                        </TemplateColumn>
-                    </Columns>
-                    <PagerContent>
-                        <MudDataGridPager T="UserDto" />
-                    </PagerContent>
-                </MudDataGrid>
-            </MudPaper>
+            <EntityDataGrid TItem="UserDto"
+                           Title="Seznam uporabnikov"
+                           Icon="@Icons.Material.Filled.People"
+                           Items="users"
+                           Loading="isLoading"
+                           OnEdit="EditUserAsync"
+                           OnDelete="DeleteUserAsync"
+                           CanDelete="@(user => currentUser != null && user.Id != currentUser.Id)"
+                           SearchFunc="@((user, search) => UserSearchFunc(user, search))">
+                <ColumnsTemplate>
+                    <PropertyColumn T="UserDto" TProperty="int" Property="x => x.Id" Title="ID" />
+                    <TemplateColumn T="UserDto" Title="Uporabniško ime">
+                        <CellTemplate Context="cellContext">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@cellContext.Item.Username</MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="UserDto" TProperty="string" Property="x => x.FullName" Title="Ime in priimek" />
+                    <PropertyColumn T="UserDto" TProperty="string" Property="x => x.Email" Title="Email" />
+                    <TemplateColumn T="UserDto" Title="Vloga" Sortable="true">
+                        <CellTemplate Context="cellContext">
+                            <MudChip T="string" Size="Size.Small" 
+                                    Color="@GetRoleColor(cellContext.Item.UserRole?.Code)"
+                                    Icon="@GetRoleIcon(cellContext.Item.UserRole?.Code)">
+                                @(cellContext.Item.UserRole?.Name ?? "N/A")
+                            </MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="UserDto" Title="Status" Sortable="true">
+                        <CellTemplate Context="cellContext">
+                            <MudChip T="string" Size="Size.Small" 
+                                    Color="@(cellContext.Item.IsActive ? Color.Success : Color.Error)"
+                                    Icon="@(cellContext.Item.IsActive ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Block)">
+                                @(cellContext.Item.IsActive ? "Aktiven" : "Neaktiven")
+                            </MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </ColumnsTemplate>
+            </EntityDataGrid>
         }
     </MudStack>
+</MudContainer>
 
-    @* Create User Form Dialog *@
-    @if (showCreateForm)
-    {
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-            <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
-                <MudStack Spacing="3">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.h5">Dodaj novega uporabnika</MudText>
-                        <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HideCreateForm" />
-                    </MudStack>
+<UserManagementDialog IsVisible="@showUserDialog"
+                     User="@selectedUser"
+                     UserRoles="@userRoles"
+                     IsEdit="@isEditMode"
+                     OnResult="HandleUserDialogResult" />
 
-                    <EditForm EditContext="createEditContext" OnValidSubmit="HandleCreateUser" FormName="CreateUserForm">
-                        <DataAnnotationsValidator />
-                        <MudStack Spacing="3">
-                            <MudTextField @bind-Value="createUserDto.Username"
-                                          For="@(() => createUserDto.Username)"
-                                          Label="Uporabniško ime"
-                                          Variant="Variant.Outlined"
-                                          Required="true" />
-
-                            <MudStack Row="true" Spacing="2">
-                                <MudTextField @bind-Value="createUserDto.FirstName"
-                                              For="@(() => createUserDto.FirstName)"
-                                              Label="Ime"
-                                              Variant="Variant.Outlined"
-                                              Required="true" />
-
-                                <MudTextField @bind-Value="createUserDto.LastName"
-                                              For="@(() => createUserDto.LastName)"
-                                              Label="Priimek"
-                                              Variant="Variant.Outlined"
-                                              Required="true" />
-                            </MudStack>
-
-                            <MudTextField @bind-Value="createUserDto.Email"
-                                          For="@(() => createUserDto.Email)"
-                                          Label="Email"
-                                          Variant="Variant.Outlined"
-                                          InputType="InputType.Email"
-                                          Required="true" />
-
-                            <MudSelect @bind-Value="createUserDto.UserRoleId"
-                                      For="@(() => createUserDto.UserRoleId)"
-                                      Label="Vloga"
-                                      Variant="Variant.Outlined"
-                                      Required="true">
-                                @if (userRoles != null)
-                                {
-                                    @foreach (var role in userRoles)
-                                    {
-                                        <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
-                                    }
-                                }
-                            </MudSelect>
-
-                            <MudTextField @bind-Value="createUserDto.Password"
-                                          For="@(() => createUserDto.Password)"
-                                          Label="Geslo"
-                                          Variant="Variant.Outlined"
-                                          InputType="InputType.Password"
-                                          Required="true" />
-
-                            <MudCheckBox @bind-Value="createUserDto.IsActive"
-                                        Label="Aktiven uporabnik"
-                                        Color="Color.Primary" />
-
-                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-                                <MudButton OnClick="HideCreateForm">Prekliči</MudButton>
-                                <MudButton ButtonType="ButtonType.Submit" 
-                                          Color="Color.Primary" 
-                                          Variant="Variant.Filled"
-                                          Disabled="isSubmitting">
-                                    @if (isSubmitting)
-                                    {
-                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                                    }
-                                    Ustvari
-                                </MudButton>
-                            </MudStack>
-                        </MudStack>
-                    </EditForm>
+@if (showDeleteDialog)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
+                <MudText Typo="Typo.body1">@deleteMessage</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija je nepovrativa in bo trajno izbrisala uporabnika iz sistema.</MudText>
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
                 </MudStack>
-            </MudPaper>
-        </div>
-    }
+            </MudStack>
+        </MudPaper>
+    </div>
+}
 
 @code {
     private List<UserDto>? users;
     private List<UserRoleDto>? userRoles;
-    private string searchString = "";
-    private bool showCreateForm = false;
-    private bool isSubmitting = false;
-    private CreateUserDto createUserDto = new();
-    private EditContext createEditContext = default!;
-
-    private Func<UserDto, bool> _quickFilter => x =>
-    {
-        if (string.IsNullOrWhiteSpace(searchString))
-            return true;
-
-        if (x.Username.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (x.FullName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (x.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return false;
-    };
+    private UserDto? currentUser;
+    private UserDto? selectedUser;
+    private bool isLoading = false;
+    private bool showUserDialog = false;
+    private bool isEditMode = false;
+    private bool showDeleteDialog = false;
+    private string deleteMessage = string.Empty;
+    private UserDto? userToDelete;
 
     [CascadingParameter]
-    private Task<AuthenticationState> authenticationStateTask { get; set; }
-
-    private UserDto user;
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("=== OnInitializedAsync START ===");
         try
         {
             var authState = await authenticationStateTask;
-            Console.WriteLine($"Auth state: {authState.User.Identity.IsAuthenticated}");
-
-            // Preverimo samo če je uporabnik prijavljen za pridobitev podatkov
+            
             if (authState.User.Identity.IsAuthenticated)
             {
-                var userId = Int32.Parse(authState.User.Identities
+                var userId = int.Parse(authState.User.Identities
                     .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
                     .FirstOrDefault());
 
-                Console.WriteLine($"Loading user with ID: {userId}");
-                user = await UserService.GetUserByIdAsync(userId);
-                Console.WriteLine($"User loaded: {user?.Username}");
+                currentUser = await UserService.GetUserByIdAsync(userId);
                 
-                Console.WriteLine("Loading users...");
                 await LoadUsers();
-                Console.WriteLine($"Users loaded, count: {users?.Count}");
-                
-                Console.WriteLine("Loading user roles...");
                 await LoadUserRoles();
-                Console.WriteLine($"User roles loaded, count: {userRoles?.Count}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"OnInitializedAsync error: {ex.Message}");
             Snackbar.Add($"Napaka pri inicializaciji: {ex.Message}", Severity.Error);
         }
-        Console.WriteLine("=== OnInitializedAsync END ===");
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            isLoading = true;
+            users = await UserService.GetAllUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju uporabnikov: {ex.Message}", Severity.Error);
+            users = new List<UserDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadUserRoles()
+    {
+        try
+        {
+            userRoles = await UserService.GetAllUserRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju vlog: {ex.Message}", Severity.Error);
+            userRoles = new List<UserRoleDto>();
+        }
     }
 
     private Color GetRoleColor(string? roleCode) => roleCode switch
@@ -285,81 +194,65 @@
         _ => Icons.Material.Filled.Person
     };
 
-    private async Task LoadUsers()
+    private bool UserSearchFunc(UserDto user, string searchString)
     {
-        try
-        {
-            users = await UserService.GetAllUsersAsync();
-            Console.WriteLine($"Loaded {users?.Count ?? 0} users");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading users: {ex.Message}");
-            Snackbar.Add($"Napaka pri nalaganju uporabnikov: {ex.Message}", Severity.Error);
-            users = new List<UserDto>(); // Prevent infinite loading
-        }
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        return user.Username.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               user.FullName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               user.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task LoadUserRoles()
+    private void CreateUser()
     {
-        try
-        {
-            userRoles = await UserService.GetAllUserRolesAsync();
-            Console.WriteLine($"Loaded {userRoles?.Count ?? 0} user roles");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user roles: {ex.Message}");
-            Snackbar.Add($"Napaka pri nalaganju vlog: {ex.Message}", Severity.Error);
-            userRoles = new List<UserRoleDto>(); // Prevent infinite loading
-        }
+        selectedUser = null;
+        isEditMode = false;
+        showUserDialog = true;
     }
 
-    private void ShowCreateUserForm()
+    private Task EditUserAsync(UserDto user)
     {
-        createUserDto = new CreateUserDto();
-        createEditContext = new EditContext(createUserDto);
-        showCreateForm = true;
+        selectedUser = user;
+        isEditMode = true;
+        showUserDialog = true;
+        return Task.CompletedTask;
     }
 
-    private void HideCreateForm()
+    private Task DeleteUserAsync(UserDto user)
     {
-        showCreateForm = false;
-        createUserDto = new CreateUserDto();
+        userToDelete = user;
+        deleteMessage = $"Ali ste prepričani, da želite izbrisati uporabnika {user.FullName}?";
+        showDeleteDialog = true;
+        return Task.CompletedTask;
     }
 
-    private async Task HandleCreateUser()
+    private async Task HandleUserDialogResult(bool success)
     {
-        isSubmitting = true;
-        try
+        showUserDialog = false;
+        if (success)
         {
-            if (user == null)
-            {
-                Snackbar.Add("Napaka: uporabnik ni naložen", Severity.Error);
-                return;
-            }
-            await UserService.CreateUserAsync(createUserDto, user.Username);
-            Snackbar.Add($"Uporabnik {createUserDto.FirstName} {createUserDto.LastName} uspešno ustvarjen.", Severity.Success);
-            HideCreateForm();
             await LoadUsers();
         }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
     }
 
-    private void ShowEditUserForm(UserDto user)
+    private async Task ConfirmDelete()
     {
-        Snackbar.Add("Edit funkcionalnost bo dodana v naslednji fazi", Severity.Info);
-    }
-
-    private async Task ShowDeleteConfirmation(UserDto user)
-    {
-        Snackbar.Add("Delete funkcionalnost bo dodana v naslednji fazi", Severity.Info);
+        showDeleteDialog = false;
+        if (userToDelete != null)
+        {
+            try
+            {
+                // TODO: Implement DeleteUserAsync in UserService
+                // await UserService.DeleteUserAsync(userToDelete.Id);
+                Snackbar.Add("Funkcionalnost brisanja bo dodana v naslednji fazi.", Severity.Info);
+                await LoadUsers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri brisanju uporabnika: {ex.Message}", Severity.Error);
+            }
+        }
+        userToDelete = null;
     }
 }

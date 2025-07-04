@@ -1,0 +1,151 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.WebUI.Server.Components.Shared
+@inject IUserService UserService
+
+<EntityDialog TItem="UserDto" 
+             Loading="@isLoading"
+             LoadingText="@(IsEdit ? "Posodabljam uporabnika..." : "Ustvarjam uporabnika...")"
+             IsSubmitting="@isSubmitting"
+             SubmitText="@(IsEdit ? "Posodobi" : "Ustvari")"
+             OnResult="HandleResult">
+    
+    <EditForm EditContext="@editContext" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <MudStack Spacing="3">
+            
+            <MudTextField @bind-Value="userModel.Username"
+                          For="@(() => userModel.Username)"
+                          Label="Uporabniško ime"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          Disabled="@IsEdit" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudTextField @bind-Value="userModel.FirstName"
+                              For="@(() => userModel.FirstName)"
+                              Label="Ime"
+                              Variant="Variant.Outlined"
+                              Required="true" />
+
+                <MudTextField @bind-Value="userModel.LastName"
+                              For="@(() => userModel.LastName)"
+                              Label="Priimek"
+                              Variant="Variant.Outlined"
+                              Required="true" />
+            </MudStack>
+
+            <MudTextField @bind-Value="userModel.Email"
+                          For="@(() => userModel.Email)"
+                          Label="Email"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Required="true" />
+
+            <MudSelect @bind-Value="userModel.UserRoleId"
+                      For="@(() => userModel.UserRoleId)"
+                      Label="Vloga"
+                      Variant="Variant.Outlined"
+                      Required="true">
+                @if (UserRoles != null)
+                {
+                    @foreach (var role in UserRoles)
+                    {
+                        <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            @if (!IsEdit)
+            {
+                <MudTextField @bind-Value="userModel.Password"
+                              For="@(() => userModel.Password)"
+                              Label="Geslo"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Password"
+                              Required="true" />
+            }
+
+            <MudCheckBox @bind-Value="userModel.IsActive"
+                        Label="Aktiven uporabnik"
+                        Color="Color.Primary" />
+
+            <ValidationSummary />
+        </MudStack>
+    </EditForm>
+</EntityDialog>
+
+@code {
+    [Parameter] public UserDto? User { get; set; }
+    [Parameter] public List<UserRoleDto>? UserRoles { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public EventCallback<bool> OnDialogResult { get; set; }
+    
+    private CreateUserDto userModel = new();
+    private EditContext editContext = default!;
+    private bool isLoading = false;
+    private bool isSubmitting = false;
+    
+    protected override void OnInitialized()
+    {
+        if (IsEdit && User != null)
+        {
+            userModel = new CreateUserDto
+            {
+                Username = User.Username,
+                FirstName = User.FirstName,
+                LastName = User.LastName,
+                Email = User.Email,
+                UserRoleId = User.UserRole?.Id ?? 0,
+                IsActive = User.IsActive,
+                Password = "" // Password not required for edit
+            };
+        }
+        
+        editContext = new EditContext(userModel);
+    }
+    
+    private async Task HandleResult(bool result)
+    {
+        if (!result)
+        {
+            await OnDialogResult.InvokeAsync(false);
+            return;
+        }
+        
+        if (!editContext.Validate())
+            return;
+            
+        await HandleValidSubmit();
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            
+            if (IsEdit && User != null)
+            {
+                // TODO: Implement UpdateUserAsync in UserService
+                // await UserService.UpdateUserAsync(User.Id, userModel);
+                await Task.Delay(1000); // Simulate API call
+            }
+            else
+            {
+                await UserService.CreateUserAsync(userModel, "system");
+            }
+            
+            await OnDialogResult.InvokeAsync(true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving user: {ex.Message}");
+            // Error is handled by the calling component
+            throw;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

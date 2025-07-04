@@ -1,0 +1,45 @@
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 70vh; overflow-y: auto;">
+            @if (Loading)
+            {
+                <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="pa-4">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.body1">@LoadingText</MudText>
+                </MudStack>
+            }
+            else
+            {
+                @ChildContent
+            }
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Prekliči</MudButton>
+        <MudButton Color="@SubmitColor" Variant="Variant.Filled" OnClick="Submit" Disabled="@(Loading || IsSubmitting)">
+            @if (IsSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+            }
+            else
+            {
+                @SubmitText
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string LoadingText { get; set; } = "Nalagam...";
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public string SubmitText { get; set; } = "Shrani";
+    [Parameter] public Color SubmitColor { get; set; } = Color.Primary;
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+    
+    void Submit() => OnResult.InvokeAsync(true);
+    void Cancel() => OnResult.InvokeAsync(false);
+}

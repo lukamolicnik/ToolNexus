@@ -1,18 +1,37 @@
-﻿@page "/tools"
-@using Microsoft.AspNetCore.Authorization
-@inject IToolService ToolService
+@page "/tools"
 @attribute [Authorize(Roles = "ADMIN,SUPERVISOR,WORKER")]
+@inject IToolService ToolService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using ToolNexus.WebUI.Server.Components.Shared
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
 
-<AuthorizeView Roles="ADMIN,SUPERVISOR,WORKER">
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
     <MudStack Spacing="4">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">Orodja</MudText>
-            <MudButton Variant="Variant.Outlined" 
-                      StartIcon="@Icons.Material.Filled.ArrowBack" 
-                      Href="/">Nazaj
-            </MudButton>
+            <MudStack Row="true" Spacing="2">
+                <AuthorizeView Roles="ADMIN,SUPERVISOR">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="CreateTool">
+                        Dodaj orodje
+                    </MudButton>
+                </AuthorizeView>
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudStack>
         </MudStack>
 
         @if (tools == null)
@@ -21,7 +40,6 @@
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
                     <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
                     <MudText Typo="Typo.h6">Nalagam orodja...</MudText>
-                    <MudText Typo="Typo.body2">Debug: tools = @(tools?.Count.ToString() ?? "null")</MudText>
                 </MudStack>
             </MudPaper>
         }
@@ -37,119 +55,215 @@
         }
         else
         {
-            <MudPaper Elevation="2">
-                <MudToolBar>
-                    <MudIcon Icon="Icons.Material.Filled.List" />
-                    <MudText Typo="Typo.h6" Class="ml-3">Seznam orodij</MudText>
-                    <MudSpacer />
-                    <MudTextField @bind-Value="searchString" 
-                                 Placeholder="Iskanje..." 
-                                 Adornment="Adornment.Start" 
-                                 AdornmentIcon="Icons.Material.Filled.Search" 
-                                 IconSize="Size.Medium" 
-                                 Immediate="true"
-                                 Class="mt-0" />
-                </MudToolBar>
-                
-                <MudDataGrid Items="@tools" 
-                           Filterable="true" 
-                           FilterMode="DataGridFilterMode.ColumnFilterRow"
-                           SortMode="SortMode.Multiple" 
-                           Groupable="false"
-                           QuickFilter="@_quickFilter"
-                           Hover="true"
-                           Striped="true"
-                           Dense="true">
-                    <Columns>
-                        <PropertyColumn Property="x => x.Id" Title="ID" />
-                        <TemplateColumn Title="Koda">
-                            <CellTemplate Context="tool">
-                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@tool.Item.Code</MudChip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                        <PropertyColumn Property="x => x.Name" Title="Naziv" />
-                        <PropertyColumn Property="x => x.Description" Title="Opis">
-                            <CellTemplate Context="tool">
-                                <MudText>@(tool.Item.Description ?? "-")</MudText>
-                            </CellTemplate>
-                        </PropertyColumn>
-                        <PropertyColumn Property="x => x.Version" Title="Verzija">
-                            <CellTemplate Context="tool">
-                                <MudText>@(tool.Item.Version ?? "-")</MudText>
-                            </CellTemplate>
-                        </PropertyColumn>
-                        <PropertyColumn Property="x => x.CreatedBy" Title="Ustvaril">
-                            <CellTemplate Context="tool">
-                                <MudText>@(tool.Item.CreatedBy ?? "-")</MudText>
-                            </CellTemplate>
-                        </PropertyColumn>
-                        <PropertyColumn Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
-                        <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
-                            <CellTemplate Context="tool">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
-                                                 Color="Color.Primary" 
-                                                 Size="Size.Small"
-                                                 Title="Poglej podrobnosti" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                                 Color="Color.Warning" 
-                                                 Size="Size.Small"
-                                                 Title="Uredi" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
-                                                 Color="Color.Success" 
-                                                 Size="Size.Small"
-                                                 Title="Izposodi" />
-                                </MudStack>
-                            </CellTemplate>
-                        </TemplateColumn>
-                    </Columns>
-                    <PagerContent>
-                        <MudDataGridPager T="Tool" />
-                    </PagerContent>
-                </MudDataGrid>
-            </MudPaper>
+            <EntityDataGrid TItem="Tool"
+                           Title="Seznam orodij"
+                           Icon="@Icons.Material.Filled.Construction"
+                           Items="tools"
+                           Loading="isLoading"
+                           OnView="ViewTool"
+                           OnEdit="EditTool"
+                           OnDelete="DeleteTool"
+                           CanEdit="@(tool => canEdit)"
+                           CanDelete="@(tool => canDelete)"
+                           SearchFunc="@((tool, search) => ToolSearchFunc(tool, search))">
+                <ColumnsTemplate>
+                    <PropertyColumn T="Tool" TProperty="int" Property="x => x.Id" Title="ID" />
+                    <TemplateColumn T="Tool" Title="Koda">
+                        <CellTemplate Context="toolContext">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@toolContext.Item.Code</MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="Tool" TProperty="string" Property="x => x.Name" Title="Naziv" />
+                    <TemplateColumn T="Tool" Title="Opis">
+                        <CellTemplate Context="toolContext">
+                            <MudText>@(toolContext.Item.Description ?? "-")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="Tool" Title="Verzija">
+                        <CellTemplate Context="toolContext">
+                            <MudText>@(toolContext.Item.Version ?? "-")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="Tool" Title="Ustvaril">
+                        <CellTemplate Context="toolContext">
+                            <MudText>@(toolContext.Item.CreatedBy ?? "-")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="Tool" TProperty="DateTime" Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
+                </ColumnsTemplate>
+                <ActionsTemplate Context="tool">
+                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
+                                 Color="Color.Success" 
+                                 Size="Size.Small"
+                                 Title="Izposodi"
+                                 OnClick="@(() => LoanTool(tool))" />
+                </ActionsTemplate>
+            </EntityDataGrid>
         }
     </MudStack>
-</AuthorizeView>
+</MudContainer>
+
+<ToolManagementDialog IsVisible="@showToolDialog"
+                     Tool="@selectedTool"
+                     IsEdit="@isEditMode"
+                     IsViewOnly="@isViewOnly"
+                     OnResult="HandleToolDialogResult" />
+
+@if (showDeleteDialog)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
+                <MudText Typo="Typo.body1">@deleteMessage</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija je nepovrativa in bo trajno izbrisala orodje iz sistema.</MudText>
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
 
 @code {
-    private List<Tool>? tools = null;
-    private string searchString = "";
+    private List<Tool>? tools;
+    private Tool? selectedTool;
+    private bool isLoading = false;
+    private bool canEdit = false;
+    private bool canDelete = false;
+    private bool showToolDialog = false;
+    private bool isEditMode = false;
+    private bool isViewOnly = false;
+    private bool showDeleteDialog = false;
+    private string deleteMessage = string.Empty;
+    private Tool? toolToDelete;
 
-    private Func<Tool, bool> _quickFilter => x =>
-    {
-        if (string.IsNullOrWhiteSpace(searchString))
-            return true;
-
-        if (x.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (x.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!string.IsNullOrEmpty(x.Description) && x.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        if (!string.IsNullOrEmpty(x.Version) && x.Version.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return false;
-    };
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("=== Tools OnInitializedAsync START ===");
         try
         {
+            var authState = await authenticationStateTask;
+            
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var userRoles = authState.User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+                    .ToList();
+
+                canEdit = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+                canDelete = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+                
+                await LoadTools();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri inicializaciji: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadTools()
+    {
+        try
+        {
+            isLoading = true;
             var result = await ToolService.GetAllToolsAsync();
-            Console.WriteLine($"Tools loaded: {result?.Count ?? 0}");
             tools = result ?? new List<Tool>();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading tools: {ex.Message}");
-            tools = new List<Tool>(); // Prevent infinite loading
+            Snackbar.Add($"Napaka pri nalaganju orodij: {ex.Message}", Severity.Error);
+            tools = new List<Tool>();
         }
-        Console.WriteLine("=== Tools OnInitializedAsync END ===");
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool ToolSearchFunc(Tool tool, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        return tool.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               tool.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               (!string.IsNullOrEmpty(tool.Description) && tool.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase)) ||
+               (!string.IsNullOrEmpty(tool.Version) && tool.Version.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private Task CreateTool()
+    {
+        selectedTool = null;
+        isEditMode = false;
+        isViewOnly = false;
+        showToolDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private Task ViewTool(Tool tool)
+    {
+        selectedTool = tool;
+        isEditMode = false;
+        isViewOnly = true;
+        showToolDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private Task EditTool(Tool tool)
+    {
+        selectedTool = tool;
+        isEditMode = true;
+        isViewOnly = false;
+        showToolDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private Task DeleteTool(Tool tool)
+    {
+        toolToDelete = tool;
+        deleteMessage = $"Ali ste prepričani, da želite izbrisati orodje {tool.Name}?";
+        showDeleteDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleToolDialogResult(bool success)
+    {
+        showToolDialog = false;
+        if (success)
+        {
+            await LoadTools();
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteDialog = false;
+        if (toolToDelete != null)
+        {
+            try
+            {
+                // TODO: Implement DeleteToolAsync in ToolService
+                // await ToolService.DeleteToolAsync(toolToDelete.Id);
+                Snackbar.Add("Funkcionalnost brisanja bo dodana v naslednji fazi.", Severity.Info);
+                await LoadTools();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri brisanju orodja: {ex.Message}", Severity.Error);
+            }
+        }
+        toolToDelete = null;
+    }
+
+    private async Task LoanTool(Tool tool)
+    {
+        // TODO: Implement loan functionality
+        Snackbar.Add("Funkcionalnost izposoje bo dodana v naslednji fazi.", Severity.Info);
     }
 }

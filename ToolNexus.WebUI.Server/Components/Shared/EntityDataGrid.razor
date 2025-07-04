@@ -1,0 +1,98 @@
+@typeparam TItem where TItem : class
+@using System.Linq.Expressions
+
+<MudPaper Elevation="2">
+    <MudToolBar>
+        <MudIcon Icon="@Icon" />
+        <MudText Typo="Typo.h6" Class="ml-3">@Title</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString" 
+                     Placeholder="Iskanje..." 
+                     Adornment="Adornment.Start" 
+                     AdornmentIcon="@Icons.Material.Filled.Search" 
+                     IconSize="Size.Medium" 
+                     Immediate="true"
+                     Class="mt-0" />
+    </MudToolBar>
+    
+    <MudDataGrid Items="@Items" 
+               Filterable="true" 
+               FilterMode="DataGridFilterMode.ColumnFilterRow"
+               SortMode="SortMode.Multiple" 
+               Groupable="false"
+               QuickFilter="@_quickFilter"
+               Hover="true"
+               Striped="true"
+               Dense="true"
+               Loading="@Loading">
+        <Columns>
+            @ColumnsTemplate
+            @if (ShowActions)
+            {
+                <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
+                    <CellTemplate Context="item">
+                        <MudStack Row="true" Spacing="1">
+                            @if (OnView != null)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                             Color="Color.Primary" 
+                                             Size="Size.Small"
+                                             Title="Poglej podrobnosti"
+                                             OnClick="@(() => OnView.Invoke(item.Item))" />
+                            }
+                            @if (OnEdit != null && CanEdit(item.Item))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                             Color="Color.Warning" 
+                                             Size="Size.Small"
+                                             Title="Uredi"
+                                             OnClick="@(() => OnEdit.Invoke(item.Item))" />
+                            }
+                            @if (OnDelete != null && CanDelete(item.Item))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                             Color="Color.Error" 
+                                             Size="Size.Small"
+                                             Title="Izbriši"
+                                             OnClick="@(() => OnDelete.Invoke(item.Item))" />
+                            }
+                            @ActionsTemplate?.Invoke(item.Item)
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            }
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="TItem" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Seznam";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.List;
+    [Parameter] public List<TItem>? Items { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public RenderFragment? ColumnsTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem>? ActionsTemplate { get; set; }
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public Func<TItem, bool>? CanEdit { get; set; } = (_) => true;
+    [Parameter] public Func<TItem, bool>? CanDelete { get; set; } = (_) => true;
+    [Parameter] public Func<TItem, Task>? OnView { get; set; }
+    [Parameter] public Func<TItem, Task>? OnEdit { get; set; }
+    [Parameter] public Func<TItem, Task>? OnDelete { get; set; }
+    [Parameter] public Func<TItem, string, bool>? SearchFunc { get; set; }
+    
+    private string searchString = "";
+    
+    private Func<TItem, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+            
+        if (SearchFunc != null)
+            return SearchFunc(x, searchString);
+            
+        return true;
+    };
+}

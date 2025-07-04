@@ -4,11 +4,6 @@
 @inject NavigationManager NavigationManager
 @inject IUserService UserService
 
-<MudThemeProvider Theme="customTheme" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-
 <AuthorizeView>
     <Authorized>
         <MudLayout>
@@ -63,37 +58,48 @@
 @code {
     [CascadingParameter]
     public HttpContext HttpContext { get; set; }
+    
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private UserDto user;
 
     bool drawerOpen = true;
 
-    private MudTheme customTheme = new MudTheme()
-    {
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#225da5",
-            PrimaryDarken = "#1a4980",
-            PrimaryLighten = "#4d82c4",
-            Secondary = "#594AE2",
-            AppbarBackground = "#225da5",
-            DrawerBackground = "#FFF",
-            DrawerText = "rgba(0,0,0, 0.7)",
-            AppbarText = "#FFF"
-        }
-    };
-
     protected override async Task OnInitializedAsync()
     {
-        // Preverimo samo če je uporabnik prijavljen za pridobitev podatkov
-        if (HttpContext.User.Identity.IsAuthenticated)
+        try
         {
-            var userId = Int32.Parse(HttpContext.User.Identities
-                .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
-                .FirstOrDefault());
+            // Najprej pokušamo z HttpContext (SSR)
+            if (HttpContext?.User?.Identity?.IsAuthenticated == true)
+            {
+                var userId = Int32.Parse(HttpContext.User.Identities
+                    .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                    .FirstOrDefault());
 
-            user = await UserService.GetUserByIdAsync(userId);
-            StateHasChanged(); // Sprožimo re-render
+                user = await UserService.GetUserByIdAsync(userId);
+                StateHasChanged();
+            }
+            // Če HttpContext ni dostopen, uporabimo AuthenticationStateProvider (InteractiveServer)
+            else if (authenticationStateTask != null)
+            {
+                var authState = await authenticationStateTask;
+                
+                if (authState.User.Identity.IsAuthenticated)
+                {
+                    var userId = Int32.Parse(authState.User.Identities
+                        .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                        .FirstOrDefault());
+
+                    user = await UserService.GetUserByIdAsync(userId);
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle the error gracefully
+            Console.WriteLine($"Error in MainLayout initialization: {ex.Message}");
         }
     }
 
