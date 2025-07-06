@@ -17,6 +17,13 @@
         </div>
 
         <EditForm Model="@LoginDto" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error-message">
+                    @errorMessage
+                </div>
+            }
+            
             <div class="form-group">
                 <label class="form-label" for="username">Uporabniško ime</label>
                 <InputText @bind-Value="LoginDto.Username" class="form-input" id="username" placeholder="Vnesite uporabniško ime" />
@@ -41,8 +48,11 @@
     [SupplyParameterFromForm]
     public LoginDto LoginDto { get; set; } = new();
 
+    private string errorMessage = string.Empty;
+
     private async Task HandleLoginAsync()
     {
+        errorMessage = string.Empty; // Clear previous error message
         Console.WriteLine($"Login attempt - Username: '{LoginDto.Username}', Password length: {LoginDto.Password?.Length ?? 0}");
         try
         {
@@ -68,10 +78,15 @@
                     HttpContext.Response.Redirect("/");
                 }
             }
+            else
+            {
+                errorMessage = "Napačno uporabniško ime ali geslo.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Login error: {ex.Message}");
+            errorMessage = "Napaka pri prijavi. Prosimo, poskusite ponovno.";
         }
     }
 }

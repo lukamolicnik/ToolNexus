@@ -10,6 +10,7 @@ namespace ToolNexus.Application.Users
         Task<UserDto> CreateUserAsync(CreateUserDto createUserDto, string createdBy);
         Task<UserDto> UpdateUserAsync(UpdateUserDto updateUserDto, string updatedBy);
         Task<bool> DeleteUserAsync(int id);
+        Task<bool> ToggleUserStatusAsync(int id);
         Task<bool> UsernameExistsAsync(string username);
         Task<bool> EmailExistsAsync(string email);
 

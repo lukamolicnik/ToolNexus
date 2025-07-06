@@ -102,6 +102,21 @@ namespace ToolNexus.Application.Users
             return await _userRepository.DeleteUserAsync(id);
         }
 
+        public async Task<bool> ToggleUserStatusAsync(int id)
+        {
+            var user = await _userRepository.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                throw new InvalidOperationException("Uporabnik ne obstaja");
+            }
+
+            user.IsActive = !user.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var updatedUser = await _userRepository.UpdateUserAsync(user);
+            return updatedUser != null;
+        }
+
         public async Task<bool> UsernameExistsAsync(string username)
         {
             return await _userRepository.UsernameExistsAsync(username);

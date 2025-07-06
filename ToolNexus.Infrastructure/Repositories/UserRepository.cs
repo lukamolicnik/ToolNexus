@@ -49,9 +49,30 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task<User> UpdateUserAsync(User user)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            context.Users.Update(user);
+            
+            // Poiščemo obstoječega uporabnika v trenutnem kontekstu
+            var existingUser = await context.Users.FirstOrDefaultAsync(u => u.Id == user.Id);
+            if (existingUser == null)
+            {
+                throw new InvalidOperationException("Uporabnik ne obstaja");
+            }
+
+            // Posodobimo samo potrebne lastnosti
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.UserRoleId = user.UserRoleId;
+            existingUser.IsActive = user.IsActive;
+            existingUser.PasswordHash = user.PasswordHash;
+            existingUser.UpdatedBy = user.UpdatedBy;
+            existingUser.UpdatedAt = user.UpdatedAt;
+
             await context.SaveChangesAsync();
-            return user;
+            
+            // Vrnemo posodobljeno entiteto z vključeno UserRole
+            return await context.Users
+                .Include(u => u.UserRole)
+                .FirstAsync(u => u.Id == user.Id);
         }
 
         public async Task<bool> DeleteUserAsync(int id)

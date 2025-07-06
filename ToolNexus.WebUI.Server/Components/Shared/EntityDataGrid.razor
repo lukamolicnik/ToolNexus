@@ -38,7 +38,7 @@
                                              Color="Color.Primary" 
                                              Size="Size.Small"
                                              Title="Poglej podrobnosti"
-                                             OnClick="@(() => OnView.Invoke(item.Item))" />
+                                             OnClick="@(async () => await OnView.Invoke(item.Item))" />
                             }
                             @if (OnEdit != null && CanEdit(item.Item))
                             {
@@ -46,15 +46,15 @@
                                              Color="Color.Warning" 
                                              Size="Size.Small"
                                              Title="Uredi"
-                                             OnClick="@(() => OnEdit.Invoke(item.Item))" />
+                                             OnClick="@(async () => await OnEdit.Invoke(item.Item))" />
                             }
                             @if (OnDelete != null && CanDelete(item.Item))
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                <MudIconButton Icon="@(DeleteIcon?.Invoke(item.Item) ?? Icons.Material.Filled.Delete)" 
                                              Color="Color.Error" 
                                              Size="Size.Small"
-                                             Title="Izbriši"
-                                             OnClick="@(() => OnDelete.Invoke(item.Item))" />
+                                             Title="@(DeleteButtonText?.Invoke(item.Item) ?? "Izbriši")"
+                                             OnClick="@(async () => await OnDelete.Invoke(item.Item))" />
                             }
                             @ActionsTemplate?.Invoke(item.Item)
                         </MudStack>
@@ -81,6 +81,8 @@
     [Parameter] public Func<TItem, Task>? OnView { get; set; }
     [Parameter] public Func<TItem, Task>? OnEdit { get; set; }
     [Parameter] public Func<TItem, Task>? OnDelete { get; set; }
+    [Parameter] public Func<TItem, string>? DeleteButtonText { get; set; }
+    [Parameter] public Func<TItem, string>? DeleteIcon { get; set; }
     [Parameter] public Func<TItem, string, bool>? SearchFunc { get; set; }
     
     private string searchString = "";

@@ -1,6 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor
+@inherits LayoutComponentBase
 
-<MudThemeProvider />
+<MudThemeProvider Theme="@customTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -8,5 +9,19 @@
 @Body
 
 @code {
-
+    private MudTheme customTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1976d2",
+            PrimaryDarken = "#1565c0",
+            PrimaryLighten = "#42a5f5",
+            Secondary = "#90caf9",
+            AppbarBackground = "#1976d2",
+            AppbarText = Colors.Shades.White,
+            DrawerBackground = "#f5f5f5",
+            DrawerText = "rgba(0,0,0, 0.87)",
+            DrawerIcon = "rgba(0,0,0, 0.54)"
+        }
+    };
 }

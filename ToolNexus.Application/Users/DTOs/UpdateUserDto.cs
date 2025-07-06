@@ -22,9 +22,7 @@ namespace ToolNexus.Application.Users.DTOs
 
         [Required(ErrorMessage = "Vloga je obvezna")]
         public int UserRoleId { get; set; }
-
         public bool IsActive { get; set; }
-
         // Optional password change
         [StringLength(100, ErrorMessage = "Geslo mora biti dolgo med 6 in 100 znakov", MinimumLength = 6)]
         public string? NewPassword { get; set; }

@@ -109,3 +109,62 @@ html, body {
         transform: rotate(360deg);
     }
 }
+
+/* MudBlazor tema override - modra namesto vijolične */
+.mud-theme-primary {
+    background-color: #1976d2 !important;
+}
+
+.mud-primary-text {
+    color: #1976d2 !important;
+}
+
+/* Navigation menu active/selected */
+.mud-nav-link.active {
+    background-color: rgba(25, 118, 210, 0.12) !important;
+    color: #1976d2 !important;
+}
+
+.mud-nav-link.active .mud-nav-link-icon {
+    color: #1976d2 !important;
+}
+
+/* AppBar */
+.mud-appbar {
+    background-color: #1976d2 !important;
+}
+
+/* Buttons */
+.mud-button-root.mud-button-filled.mud-button-filled-primary {
+    background-color: #1976d2 !important;
+}
+
+.mud-button-root.mud-button-filled.mud-button-filled-primary:hover {
+    background-color: #1565c0 !important;
+}
+
+/* Checkbox, Radio, Switch */
+.mud-checkbox .mud-button-root.mud-checked {
+    color: #1976d2 !important;
+}
+
+.mud-radio .mud-button-root.mud-checked {
+    color: #1976d2 !important;
+}
+
+.mud-switch .mud-switch-button.mud-checked {
+    background-color: #1976d2 !important;
+}
+
+.mud-switch .mud-switch-track.mud-checked {
+    background-color: rgba(25, 118, 210, 0.5) !important;
+}
+
+/* Progress indicators */
+.mud-progress-circular.mud-primary .mud-svg-circle-circle {
+    stroke: #1976d2 !important;
+}
+
+.mud-progress-linear.mud-primary .mud-progress-linear-bar {
+    background-color: #1976d2 !important;
+}

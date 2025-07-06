@@ -1,17 +1,50 @@
-﻿@page "/access-denied"
+@page "/access-denied"
+@inject NavigationManager NavigationManager
 
-<PageTitle>Access Denied</PageTitle>
+<PageTitle>Dostop zavrnjen - ToolNexus</PageTitle>
 
-<div class="container">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-6 text-center">
-            <div class="alert alert-danger" role="alert">
-                <h1 class="display-1">403</h1>
-                <h2 class="mb-3">Access Denied</h2>
-                <p class="lead">You don't have permission to access this resource.</p>
-                <hr class="my-4">
-                <a href="/" class="btn btn-primary mt-3">Return to Home</a>
-            </div>
-        </div>
-    </div>
-</div>
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
+    <MudStack Spacing="4" AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: calc(100vh - 200px);">
+        <MudPaper Elevation="3" Class="pa-8 text-center" Style="width: 100%;">
+            <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Block" 
+                         Style="font-size: 100px;" 
+                         Color="Color.Error" />
+                
+                <MudText Typo="Typo.h1" Color="Color.Error">
+                    403
+                </MudText>
+                
+                <MudText Typo="Typo.h4">
+                    Dostop zavrnjen
+                </MudText>
+                
+                <MudText Typo="Typo.body1" Color="Color.Default" Class="mb-4">
+                    Nimate dovoljenja za dostop do tega vira.
+                </MudText>
+                
+                <MudDivider Style="width: 100%;" />
+                
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          Size="Size.Large"
+                          StartIcon="@Icons.Material.Filled.Home"
+                          OnClick="NavigateHome">
+                    Nazaj na domačo stran
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private void NavigateHome()
+    {
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+}

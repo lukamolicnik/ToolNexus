@@ -1,8 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Authentication
 @using System.Security.Claims
+@using MudBlazor
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject IUserService UserService
+
+<MudThemeProvider Theme="@customTheme" />
 
 <AuthorizeView>
     <Authorized>
@@ -65,6 +68,22 @@
     private UserDto user;
 
     bool drawerOpen = true;
+
+    private MudTheme customTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1976d2",
+            PrimaryDarken = "#1565c0",
+            PrimaryLighten = "#42a5f5",
+            Secondary = "#90caf9",
+            AppbarBackground = "#1976d2",
+            AppbarText = Colors.Shades.White,
+            DrawerBackground = "#f5f5f5",
+            DrawerText = "rgba(0,0,0, 0.87)",
+            DrawerIcon = "rgba(0,0,0, 0.54)"
+        }
+    };
 
     protected override async Task OnInitializedAsync()
     {

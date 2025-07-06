@@ -91,3 +91,15 @@ body {
     background-color: #ccc;
     cursor: not-allowed;
 }
+
+.error-message {
+    background-color: #ffebee;
+    border: 1px solid #ef5350;
+    color: #c62828;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+}

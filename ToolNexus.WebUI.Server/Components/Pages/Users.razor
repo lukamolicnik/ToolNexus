@@ -1,4 +1,5 @@
 @page "/users"
+@rendermode InteractiveServer
 @attribute [Authorize(Roles = "ADMIN")]
 @inject IUserService UserService
 @inject ISnackbar Snackbar
@@ -49,8 +50,10 @@
                            Items="users"
                            Loading="isLoading"
                            OnEdit="EditUserAsync"
-                           OnDelete="DeleteUserAsync"
+                           OnDelete="ToggleUserStatusAsync"
                            CanDelete="@(user => currentUser != null && user.Id != currentUser.Id)"
+                           DeleteButtonText="@((user) => user.IsActive ? "Deaktiviraj" : "Aktiviraj")"
+                           DeleteIcon="@((user) => user.IsActive ? Icons.Material.Filled.PersonOff : Icons.Material.Filled.PersonAdd)"
                            SearchFunc="@((user, search) => UserSearchFunc(user, search))">
                 <ColumnsTemplate>
                     <PropertyColumn T="UserDto" TProperty="int" Property="x => x.Id" Title="ID" />
@@ -91,17 +94,23 @@
                      IsEdit="@isEditMode"
                      OnResult="HandleUserDialogResult" />
 
-@if (showDeleteDialog)
+@if (showStatusDialog)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
         <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
             <MudStack Spacing="3">
-                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
-                <MudText Typo="Typo.body1">@deleteMessage</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija je nepovrativa in bo trajno izbrisala uporabnika iz sistema.</MudText>
+                <MudText Typo="Typo.h6">Potrditev @(userToToggle?.IsActive == true ? "deaktivacije" : "aktivacije")</MudText>
+                <MudText Typo="Typo.body1">@statusMessage</MudText>
+                <MudText Typo="Typo.body2" Color="@(userToToggle?.IsActive == true ? Color.Warning : Color.Info)">
+                    @(userToToggle?.IsActive == true ? "Uporabnik ne bo mogel dostopati do sistema." : "Uporabnik bo ponovno pridobil dostop do sistema.")
+                </MudText>
                 <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
-                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
+                    <MudButton OnClick="() => showStatusDialog = false">Prekliči</MudButton>
+                    <MudButton Color="@(userToToggle?.IsActive == true ? Color.Warning : Color.Success)" 
+                              Variant="Variant.Filled" 
+                              OnClick="ConfirmStatusToggle">
+                        @(userToToggle?.IsActive == true ? "Deaktiviraj" : "Aktiviraj")
+                    </MudButton>
                 </MudStack>
             </MudStack>
         </MudPaper>
@@ -116,9 +125,9 @@
     private bool isLoading = false;
     private bool showUserDialog = false;
     private bool isEditMode = false;
-    private bool showDeleteDialog = false;
-    private string deleteMessage = string.Empty;
-    private UserDto? userToDelete;
+    private bool showStatusDialog = false;
+    private string statusMessage = string.Empty;
+    private UserDto? userToToggle;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
@@ -128,7 +137,7 @@
         try
         {
             var authState = await authenticationStateTask;
-            
+
             if (authState.User.Identity.IsAuthenticated)
             {
                 var userId = int.Parse(authState.User.Identities
@@ -136,7 +145,7 @@
                     .FirstOrDefault());
 
                 currentUser = await UserService.GetUserByIdAsync(userId);
-                
+
                 await LoadUsers();
                 await LoadUserRoles();
             }
@@ -216,14 +225,24 @@
         selectedUser = user;
         isEditMode = true;
         showUserDialog = true;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
-    private Task DeleteUserAsync(UserDto user)
+    private Task ToggleUserStatusAsync(UserDto user)
     {
-        userToDelete = user;
-        deleteMessage = $"Ali ste prepričani, da želite izbrisati uporabnika {user.FullName}?";
-        showDeleteDialog = true;
+        userToToggle = user;
+        if (user.IsActive)
+        {
+            statusMessage = $"Ali ste prepričani, da želite deaktivirati uporabnika {user.FullName}?";
+        }
+        else
+        {
+            statusMessage = $"Ali ste prepričani, da želite aktivirati uporabnika {user.FullName}?";
+        }
+        showStatusDialog = true;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
@@ -236,23 +255,23 @@
         }
     }
 
-    private async Task ConfirmDelete()
+    private async Task ConfirmStatusToggle()
     {
-        showDeleteDialog = false;
-        if (userToDelete != null)
+        showStatusDialog = false;
+        if (userToToggle != null)
         {
             try
             {
-                // TODO: Implement DeleteUserAsync in UserService
-                // await UserService.DeleteUserAsync(userToDelete.Id);
-                Snackbar.Add("Funkcionalnost brisanja bo dodana v naslednji fazi.", Severity.Info);
+                await UserService.ToggleUserStatusAsync(userToToggle.Id);
+                var action = userToToggle.IsActive ? "deaktiviran" : "aktiviran";
+                Snackbar.Add($"Uporabnik {userToToggle.FullName} je bil uspešno {action}.", Severity.Success);
                 await LoadUsers();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Napaka pri brisanju uporabnika: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Napaka pri spreminjanju statusa uporabnika: {ex.Message}", Severity.Error);
             }
         }
-        userToDelete = null;
+        userToToggle = null;
     }
 }
