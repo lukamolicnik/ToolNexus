@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using ToolNexus.Application.Audit;
 using ToolNexus.Application.Tools;
 using ToolNexus.Application.Users;
 
@@ -13,6 +14,9 @@ namespace ToolNexus.Application
 
             // User services
             services.AddScoped<IUserService, UserService>();
+
+            // Audit services
+            services.AddScoped<IAuditService, AuditService>();
 
             return services;
         }

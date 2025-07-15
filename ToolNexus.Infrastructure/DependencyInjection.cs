@@ -1,9 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ToolNexus.Application.Tools;
+using ToolNexus.Domain.Audit;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
+using ToolNexus.Infrastructure.Interceptors;
 using ToolNexus.Infrastructure.Repositories;
 
 namespace ToolNexus.Infrastructure
@@ -12,13 +15,33 @@ namespace ToolNexus.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            // Register HttpContextAccessor for AuditInterceptor
+            services.AddHttpContextAccessor();
+
             // Use DbContextFactory for thread-safe DbContext creation
             services.AddDbContextFactory<ApplicationDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            {
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            });
+
+            // Register DbContext with interceptor for scoped usage
+            services.AddScoped<ApplicationDbContext>(serviceProvider =>
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+                optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                
+                // Add audit interceptor
+                var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+                var auditInterceptor = new AuditInterceptor(httpContextAccessor);
+                optionsBuilder.AddInterceptors(auditInterceptor);
+                
+                return new ApplicationDbContext(optionsBuilder.Options);
+            });
 
             // Repository registrations
             services.AddScoped<IToolRepository, ToolRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuditTrailRepository, AuditTrailRepository>();
 
             return services;
         }

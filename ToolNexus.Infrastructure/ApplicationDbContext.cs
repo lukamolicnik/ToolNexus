@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ToolNexus.Domain.Audit;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
 
@@ -14,6 +15,7 @@ namespace ToolNexus.Infrastructure
         public DbSet<Tool> Tools { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<AuditTrail> AuditTrails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -112,6 +114,57 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.UpdatedBy)
                     .HasMaxLength(100);
             });
+
+            // AuditTrail entity configuration
+            modelBuilder.Entity<AuditTrail>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.EntityType)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.EntityId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+
+                entity.Property(e => e.Action)
+                    .IsRequired()
+                    .HasConversion<string>();
+
+                entity.Property(e => e.UserId)
+                    .IsRequired();
+
+                entity.Property(e => e.UserName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Timestamp)
+                    .IsRequired();
+
+                entity.Property(e => e.Changes)
+                    .HasColumnType("nvarchar(max)");
+
+                entity.Property(e => e.TableName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                // Index za hitrejše iskanje
+                entity.HasIndex(e => e.EntityType);
+                entity.HasIndex(e => e.EntityId);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Timestamp);
+            });
+        }
+
+        public override int SaveChanges()
+        {
+            return base.SaveChanges();
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

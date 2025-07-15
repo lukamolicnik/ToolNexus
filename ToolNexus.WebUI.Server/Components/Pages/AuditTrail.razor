@@ -1,0 +1,215 @@
+@page "/audit-trail"
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.Audit
+@using ToolNexus.Application.Audit.DTOs
+@using MudBlazor
+@inject IAuditService AuditService
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "ADMIN")]
+
+<PageTitle>Revizijska Sled</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Revizijska Sled</MudText>
+    
+    <MudPaper Class="pa-4 mb-4">
+        <MudGrid>
+            <MudItem xs="12" sm="4">
+                <MudSelect @bind-Value="selectedEntityType" Label="Tip Entitete" Clearable="true">
+                    <MudSelectItem Value='""'>Vsi</MudSelectItem>
+                    <MudSelectItem Value='"User"'>Uporabniki</MudSelectItem>
+                    <MudSelectItem Value='"Tool"'>Orodja</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudSelect @bind-Value="selectedAction" Label="Akcija" Clearable="true">
+                    <MudSelectItem Value='""'>Vse</MudSelectItem>
+                    <MudSelectItem Value='"Create"'>Ustvarjeno</MudSelectItem>
+                    <MudSelectItem Value='"Update"'>Posodobljeno</MudSelectItem>
+                    <MudSelectItem Value='"Delete"'>Izbrisano</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadAuditTrails" StartIcon="@Icons.Material.Filled.Search">
+                    Iskanje
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    @if (loading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (auditTrails != null && auditTrails.Any())
+    {
+        <MudTable Items="@auditTrails" Hover="true" Striped="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Datum in čas</MudTh>
+                <MudTh>Uporabnik</MudTh>
+                <MudTh>Entiteta</MudTh>
+                <MudTh>ID</MudTh>
+                <MudTh>Akcija</MudTh>
+                <MudTh>Tabela</MudTh>
+                <MudTh>Akcije</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Datum in čas">@context.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Uporabnik">@context.UserName</MudTd>
+                <MudTd DataLabel="Entiteta">@context.EntityType</MudTd>
+                <MudTd DataLabel="ID">@GetEntityIdDisplay(context.EntityId)</MudTd>
+                <MudTd DataLabel="Akcija">
+                    <MudChip T="string" Size="Size.Small" Color="@GetActionColor(context.Action)">
+                        @GetActionDisplay(context.Action)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Tabela">@context.TableName</MudTd>
+                <MudTd DataLabel="Akcije">
+                    <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Primary" Size="Size.Small" 
+                                   OnClick="@(() => ShowDetails(context))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info">Ni najdenih zapisov revizijske sledi.</MudAlert>
+    }
+</MudContainer>
+
+<MudDialog @bind-IsVisible="detailsDialogVisible">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Podrobnosti spremembe</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (selectedAudit != null)
+        {
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText><strong>Datum:</strong> @selectedAudit.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText><strong>Uporabnik:</strong> @selectedAudit.UserName</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText><strong>Entiteta:</strong> @selectedAudit.EntityType</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText><strong>Akcija:</strong> @GetActionDisplay(selectedAudit.Action)</MudText>
+                </MudItem>
+                
+                @if (selectedAudit.ChangeDetails != null && selectedAudit.ChangeDetails.Any())
+                {
+                    <MudItem xs="12" Class="mt-4">
+                        <MudText Typo="Typo.h6">Spremembe:</MudText>
+                        <MudSimpleTable Dense="true" Striped="true" Class="mt-2">
+                            <thead>
+                                <tr>
+                                    <th>Lastnost</th>
+                                    <th>Stara vrednost</th>
+                                    <th>Nova vrednost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var change in selectedAudit.ChangeDetails)
+                                {
+                                    <tr>
+                                        <td>@change.PropertyName</td>
+                                        <td>@(change.OldValue?.ToString() ?? "-")</td>
+                                        <td>@(change.NewValue?.ToString() ?? "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => detailsDialogVisible = false)">Zapri</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<AuditTrailDto>? auditTrails;
+    private bool loading = false;
+    private string selectedEntityType = "";
+    private string selectedAction = "";
+    private bool detailsDialogVisible = false;
+    private AuditTrailDto? selectedAudit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuditTrails();
+    }
+
+    private async Task LoadAuditTrails()
+    {
+        try
+        {
+            loading = true;
+            
+            var filter = new AuditTrailFilterDto
+            {
+                EntityType = string.IsNullOrEmpty(selectedEntityType) ? null : selectedEntityType,
+                Action = string.IsNullOrEmpty(selectedAction) ? null : selectedAction,
+                PageSize = 100
+            };
+            
+            auditTrails = (await AuditService.GetByFilterAsync(filter)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void ShowDetails(AuditTrailDto audit)
+    {
+        selectedAudit = audit;
+        detailsDialogVisible = true;
+    }
+
+    private string GetEntityIdDisplay(string entityId)
+    {
+        try
+        {
+            // Try to parse as JSON and extract ID
+            if (entityId.StartsWith("{") && entityId.EndsWith("}"))
+            {
+                var idValue = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(entityId);
+                return idValue?.FirstOrDefault().Value?.ToString() ?? entityId;
+            }
+        }
+        catch { }
+        
+        return entityId;
+    }
+
+    private Color GetActionColor(string action)
+    {
+        return action switch
+        {
+            "Create" => Color.Success,
+            "Update" => Color.Info,
+            "Delete" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private string GetActionDisplay(string action)
+    {
+        return action switch
+        {
+            "Create" => "Ustvarjeno",
+            "Update" => "Posodobljeno",
+            "Delete" => "Izbrisano",
+            _ => action
+        };
+    }
+}

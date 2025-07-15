@@ -13,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add controllers for API endpoints
+builder.Services.AddControllers();
+
 // Configure SignalR for better circuit handling
 builder.Services.AddSignalR(options =>
 {
@@ -61,6 +64,9 @@ app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Map API controllers
+app.MapControllers();
 
 // Login redirect endpoint
 app.MapPost("/login-redirect", async (HttpContext context) =>
