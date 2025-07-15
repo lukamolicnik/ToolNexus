@@ -22,5 +22,47 @@ namespace ToolNexus.Infrastructure.Repositories
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.Tools.ToListAsync();
         }
+
+        public async Task<Tool?> GetByIdAsync(int id)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Tools.FindAsync(id);
+        }
+
+        public async Task<Tool?> GetByCodeAsync(string code)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Tools.FirstOrDefaultAsync(t => t.Code == code);
+        }
+
+        public async Task AddAsync(Tool tool)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            context.Tools.Add(tool);
+            await context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Tool tool)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var existingTool = await context.Tools.FindAsync(tool.Id);
+            if (existingTool != null)
+            {
+                // Update only specific properties
+                existingTool.Name = tool.Name;
+                existingTool.Description = tool.Description;
+                existingTool.UpdatedBy = tool.UpdatedBy;
+                existingTool.UpdatedAt = DateTime.UtcNow;
+                
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task DeleteAsync(Tool tool)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            context.Tools.Remove(tool);
+            await context.SaveChangesAsync();
+        }
     }
 }
