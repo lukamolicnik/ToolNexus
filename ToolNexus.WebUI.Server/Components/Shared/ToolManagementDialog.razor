@@ -1,6 +1,9 @@
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Authorization
 @using ToolNexus.Application.Tools.DTOs
+@using ToolNexus.Application.Tools
 @inject ISnackbar Snackbar
+@inject IToolService ToolService
 
 @if (IsVisible)
 {
@@ -18,7 +21,6 @@
                         <MudTextField Value="@(Tool?.Code)" Label="Koda" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@(Tool?.Name)" Label="Naziv" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@(Tool?.Description)" Label="Opis" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
-                        <MudTextField Value="@(Tool?.Version)" Label="Verzija" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
                         
@@ -40,29 +42,46 @@
                         <DataAnnotationsValidator />
                         <MudStack Spacing="3">
                             
-                            <MudTextField @bind-Value="toolModel.Code"
-                                          For="@(() => toolModel.Code)"
-                                          Label="Koda"
-                                          Variant="Variant.Outlined"
-                                          Required="true"
-                                          Disabled="@IsEdit" />
+                            @if (!IsEdit)
+                            {
+                                <MudTextField @bind-Value="toolModel.Code"
+                                              For="@(() => toolModel.Code)"
+                                              Label="Koda"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
 
-                            <MudTextField @bind-Value="toolModel.Name"
-                                          For="@(() => toolModel.Name)"
-                                          Label="Naziv"
-                                          Variant="Variant.Outlined"
-                                          Required="true" />
+                                <MudTextField @bind-Value="toolModel.Name"
+                                              For="@(() => toolModel.Name)"
+                                              Label="Naziv"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
 
-                            <MudTextField @bind-Value="toolModel.Description"
-                                          For="@(() => toolModel.Description)"
-                                          Label="Opis"
-                                          Variant="Variant.Outlined"
-                                          Lines="3" />
+                                <MudTextField @bind-Value="toolModel.Description"
+                                              For="@(() => toolModel.Description)"
+                                              Label="Opis"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            }
+                            else
+                            {
+                                <MudTextField Value="@Tool?.Code"
+                                              Label="Koda"
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
 
-                            <MudTextField @bind-Value="toolModel.Version"
-                                          For="@(() => toolModel.Version)"
-                                          Label="Verzija"
-                                          Variant="Variant.Outlined" />
+                                <MudTextField @bind-Value="updateModel.Name"
+                                              For="@(() => updateModel.Name)"
+                                              Label="Naziv"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+
+                                <MudTextField @bind-Value="updateModel.Description"
+                                              For="@(() => updateModel.Description)"
+                                              Label="Opis"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            }
+
 
                             <ValidationSummary />
 
@@ -90,7 +109,11 @@
     [Parameter] public bool IsViewOnly { get; set; }
     [Parameter] public EventCallback<bool> OnResult { get; set; }
     
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+    
     private CreateToolDto toolModel = new();
+    private UpdateToolDto updateModel = new();
     private EditContext editContext = default!;
     private bool isSubmitting = false;
     
@@ -100,20 +123,18 @@
         {
             if (IsEdit && Tool != null)
             {
-                toolModel = new CreateToolDto
+                updateModel = new UpdateToolDto
                 {
-                    Code = Tool.Code,
                     Name = Tool.Name,
-                    Description = Tool.Description,
-                    Version = Tool.Version
+                    Description = Tool.Description
                 };
+                editContext = new EditContext(updateModel);
             }
             else
             {
                 toolModel = new CreateToolDto();
+                editContext = new EditContext(toolModel);
             }
-            
-            editContext = new EditContext(toolModel);
         }
     }
     
@@ -130,16 +151,17 @@
             isSubmitting = true;
             StateHasChanged();
             
+            var authState = await authenticationStateTask;
+            var userId = authState.User.Identity?.Name ?? "system";
+            
             if (IsEdit && Tool != null)
             {
-                // TODO: Implement UpdateToolAsync in ToolService
-                await Task.Delay(1000); // Simulate API call
+                await ToolService.UpdateToolAsync(Tool.Id, updateModel, userId);
                 Snackbar.Add("Orodje je bilo uspešno posodobljeno.", Severity.Success);
             }
             else
             {
-                // TODO: Implement CreateToolAsync in ToolService
-                await Task.Delay(1000); // Simulate API call
+                await ToolService.CreateToolAsync(toolModel, userId);
                 Snackbar.Add("Orodje je bilo uspešno ustvarjeno.", Severity.Success);
             }
             
@@ -159,12 +181,4 @@
     {
         await OnResult.InvokeAsync(false);
     }
-}
-
-public class CreateToolDto
-{
-    public string Code { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? Version { get; set; }
 }

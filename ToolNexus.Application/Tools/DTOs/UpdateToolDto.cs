@@ -1,18 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ToolNexus.Application.Tools.DTOs
 {
-    public class CreateToolDto
+    public class UpdateToolDto
     {
-        [Required(ErrorMessage = "Koda orodja je obvezna")]
-        [StringLength(50, MinimumLength = 3)]
-        public string Code { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Ime je obvezno")]
         [StringLength(50, ErrorMessage = "Ime ne sme biti daljše od 50 znakov")]
         public string Name { get; set; } = string.Empty;

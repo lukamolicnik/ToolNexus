@@ -46,10 +46,10 @@
                               Variant="Variant.Outlined"
                               Lines="3" />
 
-                <MudTextField @bind-Value="toolModel.Version"
+                @* <MudTextField @bind-Value="toolModel.Version"
                               For="@(() => toolModel.Version)"
                               Label="Verzija"
-                              Variant="Variant.Outlined" />
+                              Variant="Variant.Outlined" /> *@
 
                 <ValidationSummary />
             </MudStack>
@@ -82,7 +82,7 @@
                     Code = Tool.Code,
                     Name = Tool.Name,
                     Description = Tool.Description,
-                    Version = Tool.Version
+                    // Version = Tool.Version
                 };
             }
             
