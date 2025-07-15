@@ -3,9 +3,11 @@
 @using ToolNexus.Application.Audit
 @using ToolNexus.Application.Audit.DTOs
 @using MudBlazor
+@using ToolNexus.WebUI.Server.Components.Dialogs
 @inject IAuditService AuditService
 @inject ISnackbar Snackbar
 @attribute [Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
 
 <PageTitle>Revizijska Sled</PageTitle>
 
@@ -16,14 +18,12 @@
         <MudGrid>
             <MudItem xs="12" sm="4">
                 <MudSelect @bind-Value="selectedEntityType" Label="Tip Entitete" Clearable="true">
-                    <MudSelectItem Value='""'>Vsi</MudSelectItem>
                     <MudSelectItem Value='"User"'>Uporabniki</MudSelectItem>
                     <MudSelectItem Value='"Tool"'>Orodja</MudSelectItem>
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="4">
                 <MudSelect @bind-Value="selectedAction" Label="Akcija" Clearable="true">
-                    <MudSelectItem Value='""'>Vse</MudSelectItem>
                     <MudSelectItem Value='"Create"'>Ustvarjeno</MudSelectItem>
                     <MudSelectItem Value='"Update"'>Posodobljeno</MudSelectItem>
                     <MudSelectItem Value='"Delete"'>Izbrisano</MudSelectItem>
@@ -65,8 +65,10 @@
                 </MudTd>
                 <MudTd DataLabel="Tabela">@context.TableName</MudTd>
                 <MudTd DataLabel="Akcije">
-                    <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Primary" Size="Size.Small" 
-                                   OnClick="@(() => ShowDetails(context))" />
+                    <MudTooltip Text="Prikaži podrobnosti">
+                        <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Primary" Size="Size.Small" 
+                                       OnClick="@(() => ShowDetailsDialog(context))" />
+                    </MudTooltip>
                 </MudTd>
             </RowTemplate>
         </MudTable>
@@ -77,66 +79,16 @@
     }
 </MudContainer>
 
-<MudDialog @bind-IsVisible="detailsDialogVisible">
-    <TitleContent>
-        <MudText Typo="Typo.h6">Podrobnosti spremembe</MudText>
-    </TitleContent>
-    <DialogContent>
-        @if (selectedAudit != null)
-        {
-            <MudGrid>
-                <MudItem xs="12">
-                    <MudText><strong>Datum:</strong> @selectedAudit.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudText><strong>Uporabnik:</strong> @selectedAudit.UserName</MudText>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudText><strong>Entiteta:</strong> @selectedAudit.EntityType</MudText>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudText><strong>Akcija:</strong> @GetActionDisplay(selectedAudit.Action)</MudText>
-                </MudItem>
-                
-                @if (selectedAudit.ChangeDetails != null && selectedAudit.ChangeDetails.Any())
-                {
-                    <MudItem xs="12" Class="mt-4">
-                        <MudText Typo="Typo.h6">Spremembe:</MudText>
-                        <MudSimpleTable Dense="true" Striped="true" Class="mt-2">
-                            <thead>
-                                <tr>
-                                    <th>Lastnost</th>
-                                    <th>Stara vrednost</th>
-                                    <th>Nova vrednost</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var change in selectedAudit.ChangeDetails)
-                                {
-                                    <tr>
-                                        <td>@change.PropertyName</td>
-                                        <td>@(change.OldValue?.ToString() ?? "-")</td>
-                                        <td>@(change.NewValue?.ToString() ?? "-")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </MudSimpleTable>
-                    </MudItem>
-                }
-            </MudGrid>
-        }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="@(() => detailsDialogVisible = false)">Zapri</MudButton>
-    </DialogActions>
-</MudDialog>
+<AuditDetailsDialog IsVisible="@showDetailsDialog"
+                   AuditTrail="@selectedAudit"
+                   OnResult="@(() => showDetailsDialog = false)" />
 
 @code {
     private List<AuditTrailDto>? auditTrails;
     private bool loading = false;
     private string selectedEntityType = "";
     private string selectedAction = "";
-    private bool detailsDialogVisible = false;
+    private bool showDetailsDialog = false;
     private AuditTrailDto? selectedAudit;
 
     protected override async Task OnInitializedAsync()
@@ -169,10 +121,10 @@
         }
     }
 
-    private void ShowDetails(AuditTrailDto audit)
+    private void ShowDetailsDialog(AuditTrailDto audit)
     {
         selectedAudit = audit;
-        detailsDialogVisible = true;
+        showDetailsDialog = true;
     }
 
     private string GetEntityIdDisplay(string entityId)

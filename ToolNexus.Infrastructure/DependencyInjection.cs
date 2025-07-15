@@ -18,10 +18,15 @@ namespace ToolNexus.Infrastructure
             // Register HttpContextAccessor for AuditInterceptor
             services.AddHttpContextAccessor();
 
-            // Use DbContextFactory for thread-safe DbContext creation
-            services.AddDbContextFactory<ApplicationDbContext>(options =>
+            // Use DbContextFactory for thread-safe DbContext creation with audit interceptor
+            services.AddDbContextFactory<ApplicationDbContext>((serviceProvider, options) =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                
+                // Add audit interceptor to factory as well
+                var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+                var auditInterceptor = new AuditInterceptor(httpContextAccessor);
+                options.AddInterceptors(auditInterceptor);
             });
 
             // Register DbContext with interceptor for scoped usage

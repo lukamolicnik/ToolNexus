@@ -64,6 +64,7 @@ namespace ToolNexus.Infrastructure.Interceptors
             _auditEntries.Clear();
             var entries = context.ChangeTracker.Entries()
                 .Where(e => e.State != EntityState.Unchanged && e.State != EntityState.Detached)
+                .Where(e => e.Entity.GetType() != typeof(AuditTrail)) // Exclude AuditTrail entities
                 .ToList();
 
             foreach (var entry in entries)

@@ -9,11 +9,6 @@
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
 
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
     <MudStack Spacing="4">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
@@ -204,6 +199,7 @@
         isEditMode = false;
         isViewOnly = false;
         showToolDialog = true;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
@@ -213,6 +209,7 @@
         isEditMode = false;
         isViewOnly = true;
         showToolDialog = true;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
@@ -222,6 +219,7 @@
         isEditMode = true;
         isViewOnly = false;
         showToolDialog = true;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
@@ -230,6 +228,7 @@
         toolToDelete = tool;
         deleteMessage = $"Ali ste prepričani, da želite izbrisati orodje {tool.Name}?";
         showDeleteDialog = true;
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
@@ -249,9 +248,8 @@
         {
             try
             {
-                // TODO: Implement DeleteToolAsync in ToolService
-                // await ToolService.DeleteToolAsync(toolToDelete.Id);
-                Snackbar.Add("Funkcionalnost brisanja bo dodana v naslednji fazi.", Severity.Info);
+                await ToolService.DeleteToolAsync(toolToDelete.Id);
+                Snackbar.Add($"Orodje {toolToDelete.Name} je bilo uspešno izbrisano.", Severity.Success);
                 await LoadTools();
             }
             catch (Exception ex)
