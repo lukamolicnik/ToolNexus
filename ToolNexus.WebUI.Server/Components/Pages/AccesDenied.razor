@@ -1,12 +1,10 @@
 @page "/access-denied"
+@using ToolNexus.WebUI.Server.Components.Layout
+@layout EmptyLayout
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
 <PageTitle>Dostop zavrnjen - ToolNexus</PageTitle>
-
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
     <MudStack Spacing="4" AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: calc(100vh - 200px);">

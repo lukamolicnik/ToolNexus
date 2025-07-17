@@ -1,0 +1,262 @@
+@page "/categories"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@inject IToolCategoryService CategoryService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using ToolNexus.WebUI.Server.Components.Dialogs
+@using ToolNexus.Application.DTOs
+@using ToolNexus.Application.Interfaces
+@using ToolNexus.WebUI.Server.Components.Shared
+
+<PageTitle>Kategorije orodij - ToolNexus</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Kategorije orodij</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="CreateCategory">
+                    Dodaj kategorijo
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        @if (categories == null)
+        {
+            <MudPaper Elevation="2" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Nalagam kategorije...</MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else if (categories.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="Icons.Material.Filled.Info" Size="Size.Large" />
+                    <MudText Typo="Typo.h6">Ni kategorij</MudText>
+                    <MudText Typo="Typo.body1">V sistemu trenutno ni registriranih kategorij orodij.</MudText>
+                </MudStack>
+            </MudAlert>
+        }
+        else
+        {
+            <EntityDataGrid TItem="ToolCategoryDto"
+                           Title="Seznam kategorij"
+                           Icon="@Icons.Material.Filled.Category"
+                           Items="categories"
+                           Loading="isLoading"
+                           OnView="ViewCategory"
+                           OnEdit="EditCategory"
+                           OnDelete="DeleteCategory"
+                           CanEdit="@(category => canEdit)"
+                           CanDelete="@(category => canDelete && category.ToolCount == 0)"
+                           SearchFunc="@((category, search) => CategorySearchFunc(category, search))">
+                <ColumnsTemplate>
+                    <PropertyColumn T="ToolCategoryDto" TProperty="int" Property="x => x.Id" Title="ID" />
+                    <TemplateColumn T="ToolCategoryDto" Title="Koda">
+                        <CellTemplate Context="categoryContext">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@categoryContext.Item.Code</MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Name" Title="Naziv" />
+                    <TemplateColumn T="ToolCategoryDto" Title="Opis">
+                        <CellTemplate Context="categoryContext">
+                            <MudText>@(categoryContext.Item.Description ?? "-")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="ToolCategoryDto" Title="Število orodij">
+                        <CellTemplate Context="categoryContext">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@categoryContext.Item.ToolCount</MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="ToolCategoryDto" Title="Status">
+                        <CellTemplate Context="categoryContext">
+                            @if (categoryContext.Item.IsActive)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success">Aktivna</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Error">Neaktivna</MudChip>
+                            }
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="ToolCategoryDto" TProperty="DateTime" Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
+                </ColumnsTemplate>
+            </EntityDataGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+<ToolCategoryFormDialog IsVisible="@showCategoryDialog"
+                       Category="@selectedCategory"
+                       IsEdit="@isEditMode"
+                       IsViewOnly="@isViewOnly"
+                       OnResult="HandleCategoryDialogResult" />
+
+@if (showDeleteDialog)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
+                <MudText Typo="Typo.body1">@deleteMessage</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija bo trajno izbrisala kategorijo iz sistema.</MudText>
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private List<ToolCategoryDto>? categories;
+    private ToolCategoryDto? selectedCategory;
+    private bool isLoading = false;
+    private bool canEdit = false;
+    private bool canDelete = false;
+    private bool showCategoryDialog = false;
+    private bool isEditMode = false;
+    private bool isViewOnly = false;
+    private bool showDeleteDialog = false;
+    private string deleteMessage = string.Empty;
+    private ToolCategoryDto? categoryToDelete;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await authenticationStateTask;
+            
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var userRoles = authState.User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+                    .ToList();
+
+                canEdit = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+                canDelete = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+                
+                await LoadCategories();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri inicializaciji: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            isLoading = true;
+            var result = await CategoryService.GetAllAsync();
+            categories = result?.ToList() ?? new List<ToolCategoryDto>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju kategorij: {ex.Message}", Severity.Error);
+            categories = new List<ToolCategoryDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool CategorySearchFunc(ToolCategoryDto category, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        return category.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               category.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               (!string.IsNullOrEmpty(category.Description) && category.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private Task CreateCategory()
+    {
+        selectedCategory = null;
+        isEditMode = false;
+        isViewOnly = false;
+        showCategoryDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ViewCategory(ToolCategoryDto category)
+    {
+        selectedCategory = category;
+        isEditMode = false;
+        isViewOnly = true;
+        showCategoryDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task EditCategory(ToolCategoryDto category)
+    {
+        selectedCategory = category;
+        isEditMode = true;
+        isViewOnly = false;
+        showCategoryDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task DeleteCategory(ToolCategoryDto category)
+    {
+        categoryToDelete = category;
+        deleteMessage = $"Ali ste prepričani, da želite izbrisati kategorijo {category.Name}?";
+        showDeleteDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleCategoryDialogResult(bool success)
+    {
+        showCategoryDialog = false;
+        if (success)
+        {
+            await LoadCategories();
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteDialog = false;
+        if (categoryToDelete != null)
+        {
+            try
+            {
+                await CategoryService.DeleteAsync(categoryToDelete.Id);
+                Snackbar.Add($"Kategorija {categoryToDelete.Name} je bila uspešno izbrisana.", Severity.Success);
+                await LoadCategories();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri brisanju kategorije: {ex.Message}", Severity.Error);
+            }
+        }
+        categoryToDelete = null;
+    }
+}

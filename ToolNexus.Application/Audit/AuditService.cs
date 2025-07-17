@@ -19,6 +19,27 @@ namespace ToolNexus.Application.Audit
             return auditTrails.Select(MapToDto);
         }
 
+        public async Task<PagedAuditTrailDto> GetPagedAsync(AuditTrailPageRequest request)
+        {
+            var (items, totalCount) = await _auditTrailRepository.GetPagedAsync(
+                request.Page,
+                request.PageSize,
+                request.EntityType,
+                request.EntityId,
+                request.UserId,
+                request.StartDate,
+                request.EndDate,
+                request.SearchTerm);
+
+            return new PagedAuditTrailDto
+            {
+                Items = items.Select(MapToDto),
+                TotalItems = totalCount,
+                Page = request.Page,
+                PageSize = request.PageSize
+            };
+        }
+
         public async Task<IEnumerable<AuditTrailDto>> GetByEntityAsync(string entityType, string entityId)
         {
             var auditTrails = await _auditTrailRepository.GetByEntityAsync(entityType, entityId);

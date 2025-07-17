@@ -20,19 +20,19 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task<List<Tool>> GetAllToolsAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.ToListAsync();
+            return await context.Tools.Include(t => t.ToolCategory).ToListAsync();
         }
 
         public async Task<Tool?> GetByIdAsync(int id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.FindAsync(id);
+            return await context.Tools.Include(t => t.ToolCategory).FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<Tool?> GetByCodeAsync(string code)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.FirstOrDefaultAsync(t => t.Code == code);
+            return await context.Tools.Include(t => t.ToolCategory).FirstOrDefaultAsync(t => t.Code == code);
         }
 
         public async Task AddAsync(Tool tool)
@@ -45,7 +45,7 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task UpdateAsync(Tool tool)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            var existingTool = await context.Tools.FindAsync(tool.Id);
+            var existingTool = await context.Tools.Include(t => t.ToolCategory).FirstOrDefaultAsync(t => t.Id == tool.Id);
             if (existingTool != null)
             {
                 // Update only specific properties

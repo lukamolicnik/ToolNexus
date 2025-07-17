@@ -12,71 +12,123 @@
 <PageTitle>Revizijska Sled</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Revizijska Sled</MudText>
-    
-    <MudPaper Class="pa-4 mb-4">
-        <MudGrid>
-            <MudItem xs="12" sm="4">
-                <MudSelect @bind-Value="selectedEntityType" Label="Tip Entitete" Clearable="true">
-                    <MudSelectItem Value='"User"'>Uporabniki</MudSelectItem>
-                    <MudSelectItem Value='"Tool"'>Orodja</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudSelect @bind-Value="selectedAction" Label="Akcija" Clearable="true">
-                    <MudSelectItem Value='"Create"'>Ustvarjeno</MudSelectItem>
-                    <MudSelectItem Value='"Update"'>Posodobljeno</MudSelectItem>
-                    <MudSelectItem Value='"Delete"'>Izbrisano</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadAuditTrails" StartIcon="@Icons.Material.Filled.Search">
-                    Iskanje
-                </MudButton>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Revizijska Sled</MudText>
+            <MudButton Variant="Variant.Outlined" 
+                      StartIcon="@Icons.Material.Filled.ArrowBack" 
+                      Href="/">
+                Nazaj
+            </MudButton>
+        </MudStack>
 
-    @if (loading)
-    {
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-    }
-    else if (auditTrails != null && auditTrails.Any())
-    {
-        <MudTable Items="@auditTrails" Hover="true" Striped="true" Dense="true">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" sm="3">
+                    <MudSelect @bind-Value="selectedEntityType" 
+                               Label="Tip Entitete" 
+                               Clearable="true"
+                               @bind-Value:after="OnFilterChanged">
+                        <MudSelectItem Value='"User"'>Uporabniki</MudSelectItem>
+                        <MudSelectItem Value='"Tool"'>Orodja</MudSelectItem>
+                        <MudSelectItem Value='"ToolCategory"'>Kategorije</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudSelect @bind-Value="selectedAction" 
+                               Label="Akcija" 
+                               Clearable="true"
+                               @bind-Value:after="OnFilterChanged">
+                        <MudSelectItem Value='"Create"'>Ustvarjeno</MudSelectItem>
+                        <MudSelectItem Value='"Update"'>Posodobljeno</MudSelectItem>
+                        <MudSelectItem Value='"Delete"'>Izbrisano</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="searchTerm" 
+                                  Label="Iskanje" 
+                                  Placeholder="Uporabnik, tip entitete..."
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  OnKeyUp="OnSearchKeyUp"
+                                  Clearable="true" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              OnClick="ResetFilters"
+                              FullWidth="true">
+                        Počisti filtre
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudTable T="AuditTrailDto"
+                  @ref="table"
+                  ServerData="@LoadServerData"
+                  Dense="true"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Loading="@loading"
+                  LoadingProgressColor="Color.Info">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Zgodovina sprememb</MudText>
+                <MudSpacer />
+                <MudText Typo="Typo.body2" Class="align-self-center">
+                    @if (pagedResult != null)
+                    {
+                        <text>Prikazujem @((pagedResult.Page - 1) * pagedResult.PageSize + 1) - @(Math.Min(pagedResult.Page * pagedResult.PageSize, pagedResult.TotalItems)) od @pagedResult.TotalItems</text>
+                    }
+                </MudText>
+            </ToolBarContent>
             <HeaderContent>
-                <MudTh>Datum in čas</MudTh>
+                <MudTh>Čas</MudTh>
+                <MudTh>Tip</MudTh>
+                <MudTh>Akcija</MudTh>
                 <MudTh>Uporabnik</MudTh>
                 <MudTh>Entiteta</MudTh>
-                <MudTh>ID</MudTh>
-                <MudTh>Akcija</MudTh>
-                <MudTh>Tabela</MudTh>
                 <MudTh>Akcije</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Datum in čas">@context.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudTd>
-                <MudTd DataLabel="Uporabnik">@context.UserName</MudTd>
-                <MudTd DataLabel="Entiteta">@context.EntityType</MudTd>
-                <MudTd DataLabel="ID">@GetEntityIdDisplay(context.EntityId)</MudTd>
-                <MudTd DataLabel="Akcija">
-                    <MudChip T="string" Size="Size.Small" Color="@GetActionColor(context.Action)">
-                        @GetActionDisplay(context.Action)
+                <MudTd DataLabel="Čas">
+                    <MudText Typo="Typo.body2">@context.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+                </MudTd>
+                <MudTd DataLabel="Tip">
+                    <MudChip T="string" Size="Size.Small" Color="@GetEntityTypeColor(context.EntityType)">
+                        @GetEntityTypeDisplayName(context.EntityType)
                     </MudChip>
                 </MudTd>
-                <MudTd DataLabel="Tabela">@context.TableName</MudTd>
+                <MudTd DataLabel="Akcija">
+                    <MudChip T="string" Size="Size.Small" Color="@GetActionColor(context.Action)">
+                        @GetActionDisplayName(context.Action)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Uporabnik">
+                    <MudText Typo="Typo.body2">@context.UserName</MudText>
+                </MudTd>
+                <MudTd DataLabel="Entiteta">
+                    <MudText Typo="Typo.body2">@context.TableName</MudText>
+                </MudTd>
                 <MudTd DataLabel="Akcije">
-                    <MudTooltip Text="Prikaži podrobnosti">
-                        <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Primary" Size="Size.Small" 
-                                       OnClick="@(() => ShowDetailsDialog(context))" />
-                    </MudTooltip>
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                   Color="Color.Primary" 
+                                   Size="Size.Small"
+                                   Title="Podrobnosti"
+                                   OnClick="@(() => ShowDetailsDialog(context))" />
                 </MudTd>
             </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Ni podatkov za prikaz</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Nalagam...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[]{10, 25, 50, 100}" />
+            </PagerContent>
         </MudTable>
-    }
-    else
-    {
-        <MudAlert Severity="Severity.Info">Ni najdenih zapisov revizijske sledi.</MudAlert>
-    }
+    </MudStack>
 </MudContainer>
 
 <AuditDetailsDialog IsVisible="@showDetailsDialog"
@@ -84,41 +136,73 @@
                    OnResult="@(() => showDetailsDialog = false)" />
 
 @code {
-    private List<AuditTrailDto>? auditTrails;
+    private MudTable<AuditTrailDto> table = null!;
+    private PagedAuditTrailDto? pagedResult;
     private bool loading = false;
     private string selectedEntityType = "";
     private string selectedAction = "";
+    private string searchTerm = "";
     private bool showDetailsDialog = false;
     private AuditTrailDto? selectedAudit;
+    private Timer? searchTimer;
 
-    protected override async Task OnInitializedAsync()
+    private async Task<TableData<AuditTrailDto>> LoadServerData(TableState state, CancellationToken cancellationToken)
     {
-        await LoadAuditTrails();
-    }
-
-    private async Task LoadAuditTrails()
-    {
+        loading = true;
+        
         try
         {
-            loading = true;
-            
-            var filter = new AuditTrailFilterDto
+            var request = new AuditTrailPageRequest
             {
+                Page = state.Page + 1, // MudTable uses 0-based pages
+                PageSize = state.PageSize,
                 EntityType = string.IsNullOrEmpty(selectedEntityType) ? null : selectedEntityType,
-                Action = string.IsNullOrEmpty(selectedAction) ? null : selectedAction,
-                PageSize = 100
+                SearchTerm = string.IsNullOrEmpty(searchTerm) ? null : searchTerm
             };
-            
-            auditTrails = (await AuditService.GetByFilterAsync(filter)).ToList();
+
+            pagedResult = await AuditService.GetPagedAsync(request);
+
+            return new TableData<AuditTrailDto>
+            {
+                Items = pagedResult.Items,
+                TotalItems = pagedResult.TotalItems
+            };
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Napaka pri nalaganju: {ex.Message}", Severity.Error);
+            return new TableData<AuditTrailDto> { Items = new List<AuditTrailDto>(), TotalItems = 0 };
         }
         finally
         {
             loading = false;
         }
+    }
+
+    private async Task OnFilterChanged()
+    {
+        await table.ReloadServerData();
+    }
+
+    private void OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        searchTimer?.Dispose();
+        searchTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await table.ReloadServerData();
+                StateHasChanged();
+            });
+        }, null, 500, Timeout.Infinite);
+    }
+
+    private async Task ResetFilters()
+    {
+        selectedEntityType = "";
+        selectedAction = "";
+        searchTerm = "";
+        await table.ReloadServerData();
     }
 
     private void ShowDetailsDialog(AuditTrailDto audit)
@@ -127,41 +211,40 @@
         showDetailsDialog = true;
     }
 
-    private string GetEntityIdDisplay(string entityId)
+    private Color GetEntityTypeColor(string entityType) => entityType switch
     {
-        try
-        {
-            // Try to parse as JSON and extract ID
-            if (entityId.StartsWith("{") && entityId.EndsWith("}"))
-            {
-                var idValue = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(entityId);
-                return idValue?.FirstOrDefault().Value?.ToString() ?? entityId;
-            }
-        }
-        catch { }
-        
-        return entityId;
-    }
+        "User" => Color.Primary,
+        "Tool" => Color.Info,
+        "ToolCategory" => Color.Secondary,
+        _ => Color.Default
+    };
 
-    private Color GetActionColor(string action)
+    private string GetEntityTypeDisplayName(string entityType) => entityType switch
     {
-        return action switch
-        {
-            "Create" => Color.Success,
-            "Update" => Color.Info,
-            "Delete" => Color.Error,
-            _ => Color.Default
-        };
-    }
+        "User" => "Uporabnik",
+        "Tool" => "Orodje", 
+        "ToolCategory" => "Kategorija",
+        _ => entityType
+    };
 
-    private string GetActionDisplay(string action)
+    private Color GetActionColor(string action) => action switch
     {
-        return action switch
-        {
-            "Create" => "Ustvarjeno",
-            "Update" => "Posodobljeno",
-            "Delete" => "Izbrisano",
-            _ => action
-        };
+        "Create" => Color.Success,
+        "Update" => Color.Warning,
+        "Delete" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetActionDisplayName(string action) => action switch
+    {
+        "Create" => "Ustvarjeno",
+        "Update" => "Posodobljeno", 
+        "Delete" => "Izbrisano",
+        _ => action
+    };
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
     }
 }

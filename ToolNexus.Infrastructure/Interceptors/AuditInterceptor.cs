@@ -77,6 +77,33 @@ namespace ToolNexus.Infrastructure.Interceptors
 
                 _auditEntries.Add(auditEntry);
 
+                // Set CreatedBy/UpdatedBy fields automatically
+                var currentUser = GetCurrentUserName();
+                var entityType = entry.Entity.GetType();
+                
+                if (entry.State == EntityState.Added)
+                {
+                    if (entityType.GetProperty("CreatedBy") != null)
+                    {
+                        entry.Property("CreatedBy").CurrentValue = currentUser;
+                    }
+                    if (entityType.GetProperty("UpdatedBy") != null)
+                    {
+                        entry.Property("UpdatedBy").CurrentValue = currentUser;
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    if (entityType.GetProperty("UpdatedBy") != null)
+                    {
+                        entry.Property("UpdatedBy").CurrentValue = currentUser;
+                    }
+                    if (entityType.GetProperty("UpdatedAt") != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
+                    }
+                }
+
                 foreach (var property in entry.Properties)
                 {
                     if (property.IsTemporary)

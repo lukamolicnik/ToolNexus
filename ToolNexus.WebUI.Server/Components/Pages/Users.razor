@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.WebUI.Server.Components.Dialogs
 @using ToolNexus.WebUI.Server.Components.Shared
 
 <PageTitle>Uporabniki - ToolNexus</PageTitle>
@@ -83,7 +84,7 @@
     </MudStack>
 </MudContainer>
 
-<UserManagementDialog IsVisible="@showUserDialog"
+<UserFormDialog IsVisible="@showUserDialog"
                      User="@selectedUser"
                      UserRoles="@userRoles"
                      IsEdit="@isEditMode"

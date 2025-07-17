@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ToolNexus.Domain.Audit;
+using ToolNexus.Domain.ToolCategories;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
 
@@ -16,6 +17,7 @@ namespace ToolNexus.Infrastructure
         public DbSet<User> Users { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<AuditTrail> AuditTrails { get; set; }
+        public DbSet<ToolCategory> ToolCategories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -105,14 +107,16 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Description)
                     .HasMaxLength(1000);
 
-                entity.Property(e => e.Version)
-                    .HasMaxLength(50);
-
                 entity.Property(e => e.CreatedBy)
                     .HasMaxLength(100);
 
                 entity.Property(e => e.UpdatedBy)
                     .HasMaxLength(100);
+                
+                entity.HasOne(e => e.ToolCategory)
+                    .WithMany(tc => tc.Tools)
+                    .HasForeignKey(e => e.ToolCategoryId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // AuditTrail entity configuration
@@ -154,6 +158,37 @@ namespace ToolNexus.Infrastructure
                 entity.HasIndex(e => e.EntityId);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Timestamp);
+            });
+
+            // ToolCategory entity configuration
+            modelBuilder.Entity<ToolCategory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Code)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.CreatedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.UpdatedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                // Unique constraint za Code
+                entity.HasIndex(e => e.Code)
+                    .IsUnique();
             });
         }
 

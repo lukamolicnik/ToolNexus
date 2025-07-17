@@ -37,7 +37,7 @@ namespace ToolNexus.Application.Tools
                 Code = toolDto.Code,
                 Name = toolDto.Name,
                 Description = toolDto.Description,
-                Version = "1.0", // Default version
+                ToolCategoryId = toolDto.ToolCategoryId,
                 CreatedBy = userId,
                 UpdatedBy = userId,
                 CreatedAt = DateTime.UtcNow,

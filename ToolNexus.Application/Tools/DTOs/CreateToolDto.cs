@@ -19,5 +19,7 @@ namespace ToolNexus.Application.Tools.DTOs
 
         [StringLength(100, ErrorMessage = "Opis ne sme biti daljši od 100 znakov")]
         public string? Description { get; set; }
+
+        public int? ToolCategoryId { get; set; }
     }
 }

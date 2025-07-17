@@ -5,6 +5,7 @@ namespace ToolNexus.Application.Audit
     public interface IAuditService
     {
         Task<IEnumerable<AuditTrailDto>> GetAllAsync();
+        Task<PagedAuditTrailDto> GetPagedAsync(AuditTrailPageRequest request);
         Task<IEnumerable<AuditTrailDto>> GetByEntityAsync(string entityType, string entityId);
         Task<IEnumerable<AuditTrailDto>> GetByUserAsync(Guid userId);
         Task<AuditTrailDto?> GetByIdAsync(Guid id);

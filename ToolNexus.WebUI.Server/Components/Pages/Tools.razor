@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
+@using ToolNexus.WebUI.Server.Components.Dialogs
 @using ToolNexus.WebUI.Server.Components.Shared
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
@@ -75,9 +76,16 @@
                             <MudText>@(toolContext.Item.Description ?? "-")</MudText>
                         </CellTemplate>
                     </TemplateColumn>
-                    <TemplateColumn T="Tool" Title="Verzija">
+                    <TemplateColumn T="Tool" Title="Kategorija">
                         <CellTemplate Context="toolContext">
-                            <MudText>@(toolContext.Item.Version ?? "-")</MudText>
+                            @if (toolContext.Item.ToolCategory != null)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary">@toolContext.Item.ToolCategory.Name</MudChip>
+                            }
+                            else
+                            {
+                                <MudText>-</MudText>
+                            }
                         </CellTemplate>
                     </TemplateColumn>
                     <TemplateColumn T="Tool" Title="Ustvaril">
@@ -99,7 +107,7 @@
     </MudStack>
 </MudContainer>
 
-<ToolManagementDialog IsVisible="@showToolDialog"
+<ToolFormDialog IsVisible="@showToolDialog"
                      Tool="@selectedTool"
                      IsEdit="@isEditMode"
                      IsViewOnly="@isViewOnly"
@@ -112,7 +120,7 @@
             <MudStack Spacing="3">
                 <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
                 <MudText Typo="Typo.body1">@deleteMessage</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija je nepovrativa in bo trajno izbrisala orodje iz sistema.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija bo trajno izbrisala orodje iz sistema.</MudText>
                 <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
                     <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
                     <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
@@ -190,7 +198,7 @@
         return tool.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                tool.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                (!string.IsNullOrEmpty(tool.Description) && tool.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase)) ||
-               (!string.IsNullOrEmpty(tool.Version) && tool.Version.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+               (tool.ToolCategory != null && tool.ToolCategory.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase));
     }
 
     private Task CreateTool()

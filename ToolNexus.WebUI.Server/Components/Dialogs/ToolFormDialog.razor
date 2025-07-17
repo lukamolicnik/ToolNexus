@@ -2,8 +2,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using ToolNexus.Application.Tools.DTOs
 @using ToolNexus.Application.Tools
+@using ToolNexus.Application.DTOs
+@using ToolNexus.Application.Interfaces
 @inject ISnackbar Snackbar
 @inject IToolService ToolService
+@inject IToolCategoryService CategoryService
 
 @if (IsVisible)
 {
@@ -61,6 +64,21 @@
                                               Label="Opis"
                                               Variant="Variant.Outlined"
                                               Lines="3" />
+
+                                <MudSelect @bind-Value="toolModel.ToolCategoryId"
+                                           Label="Kategorija"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Izberite kategorijo..."
+                                           AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem Value="@((int?)null)">Brez kategorije</MudSelectItem>
+                                    @if (categories != null)
+                                    {
+                                        @foreach (var category in categories)
+                                        {
+                                            <MudSelectItem Value="@((int?)category.Id)">@category.Name</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
                             }
                             else
                             {
@@ -116,8 +134,9 @@
     private UpdateToolDto updateModel = new();
     private EditContext editContext = default!;
     private bool isSubmitting = false;
+    private List<ToolCategoryDto>? categories;
     
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (IsVisible && !IsViewOnly)
         {
@@ -134,7 +153,24 @@
             {
                 toolModel = new CreateToolDto();
                 editContext = new EditContext(toolModel);
+                
+                // Load categories only when creating new tool
+                await LoadCategories();
             }
+        }
+    }
+    
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var result = await CategoryService.GetActiveAsync();
+            categories = result?.ToList() ?? new List<ToolCategoryDto>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju kategorij: {ex.Message}", Severity.Error);
+            categories = new List<ToolCategoryDto>();
         }
     }
     

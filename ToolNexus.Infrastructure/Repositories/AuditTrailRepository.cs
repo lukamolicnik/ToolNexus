@@ -20,6 +20,56 @@ namespace ToolNexus.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<(IEnumerable<AuditTrail> Items, int TotalCount)> GetPagedAsync(
+            int page, 
+            int pageSize, 
+            string? entityType = null,
+            string? entityId = null,
+            Guid? userId = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string? searchTerm = null)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            
+            var query = context.AuditTrails.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(entityType))
+                query = query.Where(a => a.EntityType == entityType);
+
+            if (!string.IsNullOrEmpty(entityId))
+                query = query.Where(a => a.EntityId == entityId);
+
+            if (userId.HasValue)
+                query = query.Where(a => a.UserId == userId.Value);
+
+            if (startDate.HasValue)
+                query = query.Where(a => a.Timestamp >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(a => a.Timestamp <= endDate.Value);
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(a => 
+                    a.EntityType.Contains(searchTerm) ||
+                    a.UserName.Contains(searchTerm) ||
+                    a.TableName.Contains(searchTerm) ||
+                    (a.Changes != null && a.Changes.Contains(searchTerm)));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(a => a.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         public async Task<IEnumerable<AuditTrail>> GetByEntityAsync(string entityType, string entityId)
         {
             using var context = await _contextFactory.CreateDbContextAsync();

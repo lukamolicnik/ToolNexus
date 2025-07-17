@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ToolNexus.Application.Tools;
 using ToolNexus.Domain.Audit;
+using ToolNexus.Domain.ToolCategories;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
 using ToolNexus.Infrastructure.Interceptors;
@@ -47,6 +48,7 @@ namespace ToolNexus.Infrastructure
             services.AddScoped<IToolRepository, ToolRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAuditTrailRepository, AuditTrailRepository>();
+            services.AddScoped<IToolCategoryRepository, ToolCategoryRepository>();
 
             return services;
         }

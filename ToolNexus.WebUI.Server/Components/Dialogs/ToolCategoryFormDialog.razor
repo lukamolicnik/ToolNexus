@@ -1,0 +1,254 @@
+@using ToolNexus.Application.DTOs
+@using ToolNexus.Application.Interfaces
+@inject IToolCategoryService CategoryService
+@inject ISnackbar Snackbar
+
+@if (IsVisible)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">
+                        <MudIcon Icon="@Icons.Material.Filled.Category" Class="pb-1" />
+                        @(IsViewOnly ? "Podrobnosti kategorije" : (IsEdit ? "Uredi kategorijo" : "Nova kategorija"))
+                    </MudText>
+                    <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
+                </MudStack>
+
+                @if (IsViewOnly)
+                {
+                    <MudStack Spacing="3">
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Category?.Code" 
+                                              Label="Koda" 
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Category?.Name" 
+                                              Label="Naziv" 
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField Value="@Category?.Description" 
+                                              Label="Opis" 
+                                              Variant="Variant.Outlined"
+                                              Lines="3"
+                                              ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudSwitch Value="@Category?.IsActive" 
+                                           Label="Aktivna" 
+                                           Color="Color.Primary"
+                                           ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Category?.CreatedBy" 
+                                              Label="Ustvaril" 
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Category?.CreatedAt.ToString("dd.MM.yyyy HH:mm")" 
+                                              Label="Ustvarjeno" 
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
+                            </MudItem>
+                            @if (Category?.UpdatedAt.HasValue == true)
+                            {
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField Value="@Category?.UpdatedBy" 
+                                                  Label="Posodobil" 
+                                                  Variant="Variant.Outlined"
+                                                  ReadOnly="true" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField Value="@Category?.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")" 
+                                                  Label="Posodobljeno" 
+                                                  Variant="Variant.Outlined"
+                                                  ReadOnly="true" />
+                                </MudItem>
+                            }
+                            <MudItem xs="12">
+                                <MudTextField Value="@Category?.ToolCount.ToString()" 
+                                              Label="Število orodij" 
+                                              Variant="Variant.Outlined"
+                                              ReadOnly="true" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudForm @ref="form" @bind-IsValid="@isFormValid" @bind-Errors="@errors">
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="model.Code" 
+                                              Label="Koda" 
+                                              Variant="Variant.Outlined"
+                                              Required="true"
+                                              RequiredError="Koda je obvezna"
+                                              MaxLength="50"
+                                              Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="model.Name" 
+                                              Label="Naziv" 
+                                              Variant="Variant.Outlined"
+                                              Required="true"
+                                              RequiredError="Naziv je obvezen"
+                                              MaxLength="200"
+                                              Immediate="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="model.Description" 
+                                              Label="Opis" 
+                                              Variant="Variant.Outlined"
+                                              Lines="3"
+                                              MaxLength="1000" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudSwitch @bind-Value="model.IsActive" 
+                                           Label="Aktivna" 
+                                           Color="Color.Primary" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+                }
+
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="HandleCancel">@(IsViewOnly ? "Zapri" : "Prekliči")</MudButton>
+                    @if (!IsViewOnly)
+                    {
+                        <MudButton Color="Color.Primary" 
+                                   Variant="Variant.Filled" 
+                                   OnClick="HandleSubmit"
+                                   Disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Shranjujem...</MudText>
+                            }
+                            else
+                            {
+                                @(IsEdit ? "Shrani" : "Ustvari")
+                            }
+                        </MudButton>
+                    }
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public ToolCategoryDto? Category { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public bool IsViewOnly { get; set; }
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+
+    private MudForm form = null!;
+    private bool isFormValid;
+    private string[] errors = { };
+    private bool isSubmitting = false;
+
+    private CategoryFormModel model = new();
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            if (IsEdit && Category != null)
+            {
+                model = new CategoryFormModel
+                {
+                    Code = Category.Code,
+                    Name = Category.Name,
+                    Description = Category.Description,
+                    IsActive = Category.IsActive
+                };
+            }
+            else if (!IsEdit)
+            {
+                model = new CategoryFormModel();
+            }
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (form != null)
+        {
+            await form.Validate();
+            if (!isFormValid) 
+            {
+                Snackbar.Add("Prosimo, popravite napake v obrazcu.", Severity.Warning);
+                return;
+            }
+        }
+
+        isSubmitting = true;
+        try
+        {
+            if (IsEdit && Category != null)
+            {
+                var updateDto = new UpdateToolCategoryDto
+                {
+                    Id = Category.Id,
+                    Code = model.Code,
+                    Name = model.Name,
+                    Description = model.Description,
+                    IsActive = model.IsActive
+                };
+
+                await CategoryService.UpdateAsync(updateDto);
+                Snackbar.Add("Kategorija je bila uspešno posodobljena.", Severity.Success);
+            }
+            else
+            {
+                var createDto = new CreateToolCategoryDto
+                {
+                    Code = model.Code,
+                    Name = model.Name,
+                    Description = model.Description,
+                    IsActive = model.IsActive
+                };
+
+                await CategoryService.CreateAsync(createDto);
+                Snackbar.Add("Kategorija je bila uspešno ustvarjena.", Severity.Success);
+            }
+
+            await OnResult.InvokeAsync(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri shranjevanju: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnResult.InvokeAsync(false);
+    }
+
+    private class CategoryFormModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}
