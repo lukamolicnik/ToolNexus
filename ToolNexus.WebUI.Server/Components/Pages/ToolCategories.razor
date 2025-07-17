@@ -31,7 +31,7 @@
             </MudStack>
         </MudStack>
 
-        @if (categories == null)
+        @if (filteredCategories == null)
         {
             <MudPaper Elevation="2" Class="pa-8">
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
@@ -40,7 +40,7 @@
                 </MudStack>
             </MudPaper>
         }
-        else if (categories.Count == 0)
+        else if (filteredCategories.Count == 0)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
                 <MudStack Spacing="2" AlignItems="AlignItems.Center">
@@ -55,7 +55,7 @@
             <EntityDataGrid TItem="ToolCategoryDto"
                            Title="Seznam kategorij"
                            Icon="@Icons.Material.Filled.Category"
-                           Items="categories"
+                           Items="filteredCategories"
                            Loading="isLoading"
                            OnView="ViewCategory"
                            OnEdit="EditCategory"
@@ -64,12 +64,12 @@
                            CanDelete="@(category => canDelete && category.ToolCount == 0)"
                            SearchFunc="@((category, search) => CategorySearchFunc(category, search))">
                 <ColumnsTemplate>
-                    <PropertyColumn T="ToolCategoryDto" TProperty="int" Property="x => x.Id" Title="ID" />
-                    <TemplateColumn T="ToolCategoryDto" Title="Koda">
+                    <PropertyColumn T="ToolCategoryDto" TProperty="int" Property="x => x.Id" Title="ID" Sortable="true" Filterable="false" />
+                    <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Code" Title="Koda" Sortable="true" Filterable="true">
                         <CellTemplate Context="categoryContext">
                             <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@categoryContext.Item.Code</MudChip>
                         </CellTemplate>
-                    </TemplateColumn>
+                    </PropertyColumn>
                     <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Name" Title="Naziv" />
                     <TemplateColumn T="ToolCategoryDto" Title="Opis">
                         <CellTemplate Context="categoryContext">
@@ -93,7 +93,14 @@
                             }
                         </CellTemplate>
                     </TemplateColumn>
-                    <PropertyColumn T="ToolCategoryDto" TProperty="DateTime" Property="x => x.CreatedAt" Title="Ustvarjeno" Format="dd.MM.yyyy HH:mm" />
+                    <TemplateColumn T="ToolCategoryDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt" Filterable="true">
+                        <CellTemplate Context="categoryContext">
+                            <MudText>@categoryContext.Item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</MudText>
+                        </CellTemplate>
+                        <FilterTemplate>
+                            <MudDatePicker @bind-Date="dateFilter" @bind-Date:after="OnDateFilterChanged" Clearable="true" />
+                        </FilterTemplate>
+                    </TemplateColumn>
                 </ColumnsTemplate>
             </EntityDataGrid>
         }
@@ -125,6 +132,7 @@
 
 @code {
     private List<ToolCategoryDto>? categories;
+    private List<ToolCategoryDto>? filteredCategories;
     private ToolCategoryDto? selectedCategory;
     private bool isLoading = false;
     private bool canEdit = false;
@@ -135,6 +143,7 @@
     private bool showDeleteDialog = false;
     private string deleteMessage = string.Empty;
     private ToolCategoryDto? categoryToDelete;
+    private DateTime? dateFilter;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
@@ -171,11 +180,13 @@
             isLoading = true;
             var result = await CategoryService.GetAllAsync();
             categories = result?.ToList() ?? new List<ToolCategoryDto>();
+            ApplyDateFilter();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Napaka pri nalaganju kategorij: {ex.Message}", Severity.Error);
             categories = new List<ToolCategoryDto>();
+            filteredCategories = new List<ToolCategoryDto>();
         }
         finally
         {
@@ -191,6 +202,24 @@
         return category.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                category.Code.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
                (!string.IsNullOrEmpty(category.Description) && category.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void ApplyDateFilter()
+    {
+        if (categories == null)
+        {
+            filteredCategories = new List<ToolCategoryDto>();
+            return;
+        }
+
+        if (dateFilter.HasValue)
+        {
+            filteredCategories = categories.Where(c => c.CreatedAt.Date == dateFilter.Value.Date).ToList();
+        }
+        else
+        {
+            filteredCategories = categories.ToList();
+        }
     }
 
     private Task CreateCategory()
@@ -258,5 +287,11 @@
             }
         }
         categoryToDelete = null;
+    }
+
+    private void OnDateFilterChanged()
+    {
+        ApplyDateFilter();
+        StateHasChanged();
     }
 }

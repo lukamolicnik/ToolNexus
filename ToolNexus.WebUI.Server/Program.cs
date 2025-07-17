@@ -1,4 +1,5 @@
 using ToolNexus.WebUI.Server.Components;
+using ToolNexus.WebUI.Server.Services;
 using ToolNexus.Application;
 using ToolNexus.Infrastructure;
 using ToolNexus.Application.Users;
@@ -25,6 +26,9 @@ builder.Services.AddSignalR(options =>
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
+
+// Add QR Code Service
+builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 
 // Add application and infrastructure services
 builder.Services.AddApplication();

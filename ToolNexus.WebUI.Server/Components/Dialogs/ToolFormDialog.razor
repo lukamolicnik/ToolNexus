@@ -4,14 +4,18 @@
 @using ToolNexus.Application.Tools
 @using ToolNexus.Application.DTOs
 @using ToolNexus.Application.Interfaces
+@using ToolNexus.WebUI.Server.Services
+@using ToolNexus.Domain.Tools
 @inject ISnackbar Snackbar
 @inject IToolService ToolService
 @inject IToolCategoryService CategoryService
+@inject IQRCodeService QRCodeService
+@inject IJSRuntime JS
 
 @if (IsVisible)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+        <MudPaper Class="pa-6" Style="@GetDialogStyle()">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudText Typo="Typo.h5">@GetDialogTitle()</MudText>
@@ -21,11 +25,41 @@
                 @if (IsViewOnly)
                 {
                     <MudStack Spacing="3">
-                        <MudTextField Value="@(Tool?.Code)" Label="Koda" Variant="Variant.Outlined" ReadOnly="true" />
-                        <MudTextField Value="@(Tool?.Name)" Label="Naziv" Variant="Variant.Outlined" ReadOnly="true" />
-                        <MudTextField Value="@(Tool?.Description)" Label="Opis" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
-                        <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
-                        <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudGrid>
+                            <MudItem xs="12" sm="8">
+                                <MudStack Spacing="3">
+                                    <MudTextField Value="@(Tool?.Code)" Label="Koda" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudTextField Value="@(Tool?.Name)" Label="Naziv" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudTextField Value="@(Tool?.Description)" Label="Opis" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
+                                    @if (Tool?.ToolCategory != null)
+                                    {
+                                        <MudTextField Value="@(Tool?.ToolCategory?.Name)" Label="Kategorija" Variant="Variant.Outlined" ReadOnly="true" />
+                                    }
+                                    <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.h6">QR Koda</MudText>
+                                    @if (!string.IsNullOrEmpty(qrCodeImage))
+                                    {
+                                        <MudImage Src="@qrCodeImage" Alt="QR Code" Width="200" Height="200" Style="border: 1px solid #ddd; padding: 10px;" />
+                                        <MudButton Variant="Variant.Filled" 
+                                                  Color="Color.Primary" 
+                                                  StartIcon="@Icons.Material.Filled.Print"
+                                                  OnClick="PrintQRCode"
+                                                  Size="Size.Small">
+                                            Natisni QR kodo
+                                        </MudButton>
+                                    }
+                                    else
+                                    {
+                                        <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                                    }
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
                         
                         <MudStack Row="true" Justify="Justify.FlexEnd">
                             <MudButton OnClick="HandleCancel">Zapri</MudButton>
@@ -135,27 +169,36 @@
     private EditContext editContext = default!;
     private bool isSubmitting = false;
     private List<ToolCategoryDto>? categories;
+    private string? qrCodeImage;
     
     protected override async Task OnParametersSetAsync()
     {
-        if (IsVisible && !IsViewOnly)
+        if (IsVisible)
         {
-            if (IsEdit && Tool != null)
+            if (IsViewOnly && Tool != null)
             {
-                updateModel = new UpdateToolDto
-                {
-                    Name = Tool.Name,
-                    Description = Tool.Description
-                };
-                editContext = new EditContext(updateModel);
+                // Generate QR code for viewing
+                await GenerateQRCode();
             }
-            else
+            else if (!IsViewOnly)
             {
-                toolModel = new CreateToolDto();
-                editContext = new EditContext(toolModel);
-                
-                // Load categories only when creating new tool
-                await LoadCategories();
+                if (IsEdit && Tool != null)
+                {
+                    updateModel = new UpdateToolDto
+                    {
+                        Name = Tool.Name,
+                        Description = Tool.Description
+                    };
+                    editContext = new EditContext(updateModel);
+                }
+                else
+                {
+                    toolModel = new CreateToolDto();
+                    editContext = new EditContext(toolModel);
+                    
+                    // Load categories only when creating new tool
+                    await LoadCategories();
+                }
             }
         }
     }
@@ -178,6 +221,12 @@
     {
         if (IsViewOnly) return "Podrobnosti orodja";
         return IsEdit ? "Uredi orodje" : "Dodaj orodje";
+    }
+    
+    private string GetDialogStyle()
+    {
+        var maxWidth = IsViewOnly ? "800px" : "500px";
+        return $"max-width: {maxWidth}; width: 90vw; max-height: 90vh; overflow-y: auto;";
     }
     
     private async Task HandleValidSubmit()
@@ -216,5 +265,37 @@
     private async Task HandleCancel()
     {
         await OnResult.InvokeAsync(false);
+    }
+
+    private async Task GenerateQRCode()
+    {
+        if (Tool != null && !string.IsNullOrEmpty(Tool.Code))
+        {
+            try
+            {
+                qrCodeImage = QRCodeService.GenerateQRCodeBase64(Tool.Code);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri generiranju QR kode: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task PrintQRCode()
+    {
+        if (Tool != null && !string.IsNullOrEmpty(qrCodeImage))
+        {
+            var printContent = $@"
+                <div style='text-align: center; padding: 20px; font-family: Arial, sans-serif;'>
+                    <div style='margin: 20px 0;'>
+                        <img src='{qrCodeImage}' alt='QR Code' style='border: 1px solid #ddd; padding: 10px;' />
+                    </div>
+                    <p>{Tool.Code}</p>
+                </div>
+            ";
+
+            await JS.InvokeVoidAsync("printContent", printContent);
+        }
     }
 }

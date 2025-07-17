@@ -88,19 +88,29 @@
 
                             @if (IsEdit)
                             {
-                                <MudSelect @bind-Value="updateUserModel.UserRoleId"
-                                          For="@(() => updateUserModel.UserRoleId)"
-                                          Label="Vloga"
-                                          Variant="Variant.Outlined"
-                                          Required="true">
-                                    @if (UserRoles != null)
-                                    {
-                                        @foreach (var role in UserRoles)
+                                @if (isEditingSelf)
+                                {
+                                    <MudTextField @bind-Value="@(User.UserRole.Name)"
+                                                  Label="Vloga"
+                                                  Variant="Variant.Outlined"
+                                                  ReadOnly="true" />
+                                }
+                                else
+                                {
+                                    <MudSelect @bind-Value="updateUserModel.UserRoleId"
+                                              For="@(() => updateUserModel.UserRoleId)"
+                                              Label="Vloga"
+                                              Variant="Variant.Outlined"
+                                              Required="true">
+                                        @if (UserRoles != null)
                                         {
-                                            <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                                            @foreach (var role in UserRoles)
+                                            {
+                                                <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                                            }
                                         }
-                                    }
-                                </MudSelect>
+                                    </MudSelect>
+                                }
                             }
                             else
                             {
@@ -194,13 +204,17 @@
     private EditContext editContext = default!;
     private bool isSubmitting = false;
     private bool showPasswordField = false;
+    private bool isEditingSelf = false;
     
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (IsVisible)
         {
             if (IsEdit && User != null)
             {
+                // Preveri ali ureja sam sebe
+                await CheckIfEditingSelf();
+                
                 updateUserModel = new UpdateUserDto
                 {
                     Id = User.Id,
@@ -216,6 +230,7 @@
             }
             else
             {
+                isEditingSelf = false;
                 createUserModel = new CreateUserDto();
                 editContext = new EditContext(createUserModel);
                 showPasswordField = false;
@@ -253,6 +268,23 @@
         finally
         {
             isSubmitting = false;
+        }
+    }
+    
+    private async Task CheckIfEditingSelf()
+    {
+        try
+        {
+            var authState = await authenticationStateTask;
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var currentUsername = authState.User.Identity.Name;
+                isEditingSelf = User?.Username == currentUsername;
+            }
+        }
+        catch
+        {
+            isEditingSelf = false;
         }
     }
     

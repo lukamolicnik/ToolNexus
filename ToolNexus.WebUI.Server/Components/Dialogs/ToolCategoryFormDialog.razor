@@ -111,9 +111,25 @@
                                               MaxLength="1000" />
                             </MudItem>
                             <MudItem xs="12">
-                                <MudSwitch @bind-Value="model.IsActive" 
-                                           Label="Aktivna" 
-                                           Color="Color.Primary" />
+                                @if (IsEdit && !canDeactivate && model.IsActive)
+                                {
+                                    <MudStack Spacing="1">
+                                        <MudSwitch Value="model.IsActive" 
+                                                   Label="Aktivna" 
+                                                   Color="Color.Primary"
+                                                   ReadOnly="true" />
+                                        <MudText Typo="Typo.caption" Color="Color.Warning">
+                                            <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                                            Kategorije ni mogoče deaktivirati, ker vsebuje @Category?.ToolCount orodij
+                                        </MudText>
+                                    </MudStack>
+                                }
+                                else
+                                {
+                                    <MudSwitch @bind-Value="model.IsActive" 
+                                               Label="Aktivna" 
+                                               Color="Color.Primary" />
+                                }
                             </MudItem>
                         </MudGrid>
                     </MudForm>
@@ -156,6 +172,7 @@
     private bool isFormValid;
     private string[] errors = { };
     private bool isSubmitting = false;
+    private bool canDeactivate = true;
 
     private CategoryFormModel model = new();
 
@@ -172,10 +189,14 @@
                     Description = Category.Description,
                     IsActive = Category.IsActive
                 };
+                
+                // Preveri ali kategorija ima vezana orodja - če da, onemogoči deaktivacijo
+                canDeactivate = Category.ToolCount == 0 || !Category.IsActive;
             }
             else if (!IsEdit)
             {
                 model = new CategoryFormModel();
+                canDeactivate = true;
             }
         }
     }
