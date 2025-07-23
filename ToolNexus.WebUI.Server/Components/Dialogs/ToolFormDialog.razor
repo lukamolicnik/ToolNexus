@@ -1,11 +1,10 @@
-@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Authorization
-@using ToolNexus.Application.Tools.DTOs
+@using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.Application.ToolCategories
+@using ToolNexus.Application.ToolCategories.DTOs
 @using ToolNexus.Application.Tools
-@using ToolNexus.Application.DTOs
-@using ToolNexus.Application.Interfaces
+@using ToolNexus.Application.Tools.DTOs
 @using ToolNexus.WebUI.Server.Services
-@using ToolNexus.Domain.Tools
 @inject ISnackbar Snackbar
 @inject IToolService ToolService
 @inject IToolCategoryService CategoryService
@@ -31,10 +30,12 @@
                                     <MudTextField Value="@(Tool?.Code)" Label="Koda" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@(Tool?.Name)" Label="Naziv" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@(Tool?.Description)" Label="Opis" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
-                                    @if (Tool?.ToolCategory != null)
+                                    @if (!string.IsNullOrEmpty(Tool?.ToolCategoryName))
                                     {
-                                        <MudTextField Value="@(Tool?.ToolCategory?.Name)" Label="Kategorija" Variant="Variant.Outlined" ReadOnly="true" />
+                                        <MudTextField Value="@(Tool?.ToolCategoryName)" Label="Kategorija" Variant="Variant.Outlined" ReadOnly="true" />
                                     }
+                                    <MudTextField Value="@(Tool?.CurrentStock)" Label="Trenutna zaloga" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudTextField Value="@($"{Tool?.MinimumStock} / {Tool?.CriticalStock}")" Label="Min/Krit zaloga" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
                                 </MudStack>
@@ -99,6 +100,18 @@
                                               Variant="Variant.Outlined"
                                               Lines="3" />
 
+                                <MudNumericField @bind-Value="toolModel.MinimumStock"
+                                                 For="@(() => toolModel.MinimumStock)"
+                                                 Label="Minimalna zaloga"
+                                                 Variant="Variant.Outlined"
+                                                 Min="0" />
+
+                                <MudNumericField @bind-Value="toolModel.CriticalStock"
+                                                 For="@(() => toolModel.CriticalStock)"
+                                                 Label="Kritična zaloga"
+                                                 Variant="Variant.Outlined"
+                                                 Min="0" />
+
                                 <MudSelect @bind-Value="toolModel.ToolCategoryId"
                                            Label="Kategorija"
                                            Variant="Variant.Outlined"
@@ -132,6 +145,18 @@
                                               Label="Opis"
                                               Variant="Variant.Outlined"
                                               Lines="3" />
+
+                                <MudNumericField @bind-Value="updateModel.MinimumStock"
+                                                 For="@(() => updateModel.MinimumStock)"
+                                                 Label="Minimalna zaloga"
+                                                 Variant="Variant.Outlined"
+                                                 Min="0" />
+
+                                <MudNumericField @bind-Value="updateModel.CriticalStock"
+                                                 For="@(() => updateModel.CriticalStock)"
+                                                 Label="Kritična zaloga"
+                                                 Variant="Variant.Outlined"
+                                                 Min="0" />
                             }
 
 
@@ -156,7 +181,7 @@
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
-    [Parameter] public Tool? Tool { get; set; }
+    [Parameter] public ToolDto? Tool { get; set; }
     [Parameter] public bool IsEdit { get; set; }
     [Parameter] public bool IsViewOnly { get; set; }
     [Parameter] public EventCallback<bool> OnResult { get; set; }
@@ -187,7 +212,9 @@
                     updateModel = new UpdateToolDto
                     {
                         Name = Tool.Name,
-                        Description = Tool.Description
+                        Description = Tool.Description,
+                        MinimumStock = Tool.MinimumStock,
+                        CriticalStock = Tool.CriticalStock
                     };
                     editContext = new EditContext(updateModel);
                 }

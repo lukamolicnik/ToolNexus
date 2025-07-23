@@ -53,11 +53,7 @@
                            SearchFunc="@((user, search) => UserSearchFunc(user, search))">
                 <ColumnsTemplate>
                     <PropertyColumn T="UserDto" TProperty="int" Property="x => x.Id" Title="ID" />
-                    <TemplateColumn T="UserDto" Title="Uporabniško ime">
-                        <CellTemplate Context="cellContext">
-                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@cellContext.Item.Username</MudChip>
-                        </CellTemplate>
-                    </TemplateColumn>
+                    <PropertyColumn T="UserDto" TProperty="string" Property="x => x.Username" Title="Uporabniško ime" />
                     <PropertyColumn T="UserDto" TProperty="string" Property="x => x.FullName" Title="Ime in priimek" />
                     <PropertyColumn T="UserDto" TProperty="string" Property="x => x.Email" Title="Email" />
                     <TemplateColumn T="UserDto" Title="Vloga" Sortable="true">

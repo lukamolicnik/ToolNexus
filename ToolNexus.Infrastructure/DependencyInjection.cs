@@ -7,6 +7,8 @@ using ToolNexus.Domain.Audit;
 using ToolNexus.Domain.ToolCategories;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
+using ToolNexus.Domain.Suppliers;
+using ToolNexus.Domain.DeliveryNotes;
 using ToolNexus.Infrastructure.Interceptors;
 using ToolNexus.Infrastructure.Repositories;
 
@@ -49,6 +51,9 @@ namespace ToolNexus.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAuditTrailRepository, AuditTrailRepository>();
             services.AddScoped<IToolCategoryRepository, ToolCategoryRepository>();
+            services.AddScoped<ISupplierRepository, SupplierRepository>();
+            services.AddScoped<IDeliveryNoteRepository, DeliveryNoteRepository>();
+            services.AddScoped<IDeliveryNoteItemRepository, DeliveryNoteItemRepository>();
 
             return services;
         }

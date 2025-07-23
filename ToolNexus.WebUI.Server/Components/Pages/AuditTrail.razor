@@ -32,6 +32,9 @@
                         <MudSelectItem Value='"User"'>Uporabniki</MudSelectItem>
                         <MudSelectItem Value='"Tool"'>Orodja</MudSelectItem>
                         <MudSelectItem Value='"ToolCategory"'>Kategorije</MudSelectItem>
+                        <MudSelectItem Value='"Supplier"'>Dobavitelji</MudSelectItem>
+                        <MudSelectItem Value='"DeliveryNote"'>Dobavnice</MudSelectItem>
+                        <MudSelectItem Value='"DeliveryNoteItem"'>Postavke dobavnic</MudSelectItem>
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="3">
@@ -95,9 +98,7 @@
                     <MudText Typo="Typo.body2">@context.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
                 </MudTd>
                 <MudTd DataLabel="Tip">
-                    <MudChip T="string" Size="Size.Small" Color="@GetEntityTypeColor(context.EntityType)">
-                        @GetEntityTypeDisplayName(context.EntityType)
-                    </MudChip>
+                    <MudText Typo="Typo.body2">@GetEntityTypeDisplayName(context.EntityType)</MudText>
                 </MudTd>
                 <MudTd DataLabel="Akcija">
                     <MudChip T="string" Size="Size.Small" Color="@GetActionColor(context.Action)">
@@ -211,19 +212,14 @@
         showDetailsDialog = true;
     }
 
-    private Color GetEntityTypeColor(string entityType) => entityType switch
-    {
-        "User" => Color.Primary,
-        "Tool" => Color.Info,
-        "ToolCategory" => Color.Secondary,
-        _ => Color.Default
-    };
-
     private string GetEntityTypeDisplayName(string entityType) => entityType switch
     {
         "User" => "Uporabnik",
         "Tool" => "Orodje", 
         "ToolCategory" => "Kategorija",
+        "Supplier" => "Dobavitelj",
+        "DeliveryNote" => "Dobavnica",
+        "DeliveryNoteItem" => "Postavka dobavnice",
         _ => entityType
     };
 

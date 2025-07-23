@@ -1,4 +1,4 @@
-namespace ToolNexus.Application.DTOs;
+namespace ToolNexus.Application.ToolCategories.DTOs;
 
 public class ToolCategoryDto
 {

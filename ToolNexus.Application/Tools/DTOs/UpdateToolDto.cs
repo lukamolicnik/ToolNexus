@@ -10,5 +10,11 @@ namespace ToolNexus.Application.Tools.DTOs
 
         [StringLength(100, ErrorMessage = "Opis ne sme biti daljši od 100 znakov")]
         public string? Description { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Minimalna zaloga mora biti pozitivna")]
+        public int MinimumStock { get; set; } = 0;
+
+        [Range(0, int.MaxValue, ErrorMessage = "Kritična zaloga mora biti pozitivna")]
+        public int CriticalStock { get; set; } = 0;
     }
 }

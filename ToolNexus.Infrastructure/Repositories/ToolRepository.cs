@@ -51,6 +51,9 @@ namespace ToolNexus.Infrastructure.Repositories
                 // Update only specific properties
                 existingTool.Name = tool.Name;
                 existingTool.Description = tool.Description;
+                existingTool.CurrentStock = tool.CurrentStock;
+                existingTool.MinimumStock = tool.MinimumStock;
+                existingTool.CriticalStock = tool.CriticalStock;
                 existingTool.UpdatedBy = tool.UpdatedBy;
                 existingTool.UpdatedAt = DateTime.UtcNow;
                 

@@ -1,6 +1,6 @@
-using ToolNexus.Application.DTOs;
+using ToolNexus.Application.ToolCategories.DTOs;
 
-namespace ToolNexus.Application.Interfaces;
+namespace ToolNexus.Application.ToolCategories;
 
 public interface IToolCategoryService
 {

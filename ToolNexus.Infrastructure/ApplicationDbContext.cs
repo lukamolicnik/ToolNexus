@@ -3,6 +3,8 @@ using ToolNexus.Domain.Audit;
 using ToolNexus.Domain.ToolCategories;
 using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
+using ToolNexus.Domain.Suppliers;
+using ToolNexus.Domain.DeliveryNotes;
 
 namespace ToolNexus.Infrastructure
 {
@@ -18,6 +20,9 @@ namespace ToolNexus.Infrastructure
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<AuditTrail> AuditTrails { get; set; }
         public DbSet<ToolCategory> ToolCategories { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<DeliveryNote> DeliveryNotes { get; set; }
+        public DbSet<DeliveryNoteItem> DeliveryNoteItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +112,18 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Description)
                     .HasMaxLength(1000);
 
+                entity.Property(e => e.CurrentStock)
+                    .IsRequired()
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.MinimumStock)
+                    .IsRequired()
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.CriticalStock)
+                    .IsRequired()
+                    .HasDefaultValue(0);
+
                 entity.Property(e => e.CreatedBy)
                     .HasMaxLength(100);
 
@@ -117,6 +134,10 @@ namespace ToolNexus.Infrastructure
                     .WithMany(tc => tc.Tools)
                     .HasForeignKey(e => e.ToolCategoryId)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                // Unique constraint za Code
+                entity.HasIndex(e => e.Code)
+                    .IsUnique();
             });
 
             // AuditTrail entity configuration
@@ -189,6 +210,95 @@ namespace ToolNexus.Infrastructure
                 // Unique constraint za Code
                 entity.HasIndex(e => e.Code)
                     .IsUnique();
+            });
+
+            // Supplier entity configuration
+            modelBuilder.Entity<Supplier>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Email)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Phone)
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Address)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.UpdatedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                // Unique constraint
+                entity.HasIndex(e => e.Name)
+                    .IsUnique();
+            });
+
+            // DeliveryNote entity configuration
+            modelBuilder.Entity<DeliveryNote>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.DeliveryNoteNumber)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.DeliveryDate)
+                    .IsRequired();
+
+                entity.Property(e => e.Notes)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.CreatedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.UpdatedBy)
+                    .HasMaxLength(100);
+
+                // Unique constraint
+                entity.HasIndex(e => e.DeliveryNoteNumber)
+                    .IsUnique();
+
+                // Relationships
+                entity.HasOne(e => e.Supplier)
+                    .WithMany(s => s.DeliveryNotes)
+                    .HasForeignKey(e => e.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // DeliveryNoteItem entity configuration
+            modelBuilder.Entity<DeliveryNoteItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Quantity)
+                    .IsRequired();
+
+                entity.Property(e => e.UnitPrice)
+                    .IsRequired()
+                    .HasPrecision(18, 2);
+
+                // Relationships
+                entity.HasOne(e => e.DeliveryNote)
+                    .WithMany(d => d.DeliveryNoteItems)
+                    .HasForeignKey(e => e.DeliveryNoteId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Tool)
+                    .WithMany()
+                    .HasForeignKey(e => e.ToolId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
 

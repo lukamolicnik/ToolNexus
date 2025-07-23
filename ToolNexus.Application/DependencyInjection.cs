@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using ToolNexus.Application.Audit;
-using ToolNexus.Application.Interfaces;
-using ToolNexus.Application.Services;
 using ToolNexus.Application.Tools;
 using ToolNexus.Application.Users;
+using ToolNexus.Application.Suppliers;
+using ToolNexus.Application.DeliveryNotes;
+using ToolNexus.Application.ToolCategories;
 
 namespace ToolNexus.Application
 {
@@ -20,6 +21,12 @@ namespace ToolNexus.Application
 
             // Audit services
             services.AddScoped<IAuditService, AuditService>();
+
+            // Supplier services
+            services.AddScoped<ISupplierService, SupplierService>();
+
+            // Delivery Note services
+            services.AddScoped<IDeliveryNoteService, DeliveryNoteService>();
 
             return services;
         }

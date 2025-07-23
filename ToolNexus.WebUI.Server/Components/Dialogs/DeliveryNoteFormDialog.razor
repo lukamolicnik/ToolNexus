@@ -1,0 +1,393 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.Application.DeliveryNotes
+@using ToolNexus.Application.DeliveryNotes.DTOs
+@using ToolNexus.Application.Suppliers
+@using ToolNexus.Application.Suppliers.DTOs
+@using ToolNexus.Application.Tools
+@using ToolNexus.Application.Tools.DTOs
+@using ToolNexus.WebUI.Server.Components
+@inject ISnackbar Snackbar
+@inject IDeliveryNoteService DeliveryNoteService
+@inject ISupplierService SupplierService
+@inject IToolService ToolService
+
+@if (IsVisible)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6 delivery-note-dialog" Style="max-width: 900px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">Nova dobavnica</MudText>
+                    <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
+                </MudStack>
+
+                @if (isSubmitting)
+                {
+                    <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="pa-4">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                        <MudText Typo="Typo.body1">Shranjujem dobavnico...</MudText>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudText Typo="Typo.h6" Class="mb-3">Osnovni podatki</MudText>
+                                    
+                                    <MudStack Spacing="3">
+                                        <MudTextField @bind-Value="model.DeliveryNoteNumber"
+                                                      Label="Številka dobavnice"
+                                                      Variant="Variant.Outlined"
+                                                      Required="true" />
+
+                                        <MudDatePicker @bind-Date="deliveryDate"
+                                                       Label="Datum dobavnice"
+                                                       Variant="Variant.Outlined"
+                                                       Required="true" />
+
+                                        <MudSelect @bind-Value="model.SupplierId"
+                                                   Label="Dobavitelj"
+                                                   Variant="Variant.Outlined"
+                                                   Required="true">
+                                            @if (suppliers != null)
+                                            {
+                                                @foreach (var supplier in suppliers)
+                                                {
+                                                    <MudSelectItem Value="@supplier.Id">@supplier.Name</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+
+                                        <MudTextField @bind-Value="model.Notes"
+                                                      Label="Opombe"
+                                                      Variant="Variant.Outlined"
+                                                      Lines="3" />
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="6">
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudText Typo="Typo.h6" Class="mb-3">Skeniranje QR kode</MudText>
+                                    <QRCodeScanner OnCodeScanned="HandleScannedCode" />
+                                    
+                                    @if (!string.IsNullOrEmpty(scannedCode))
+                                    {
+                                        <MudAlert Severity="Severity.Success" Class="mt-3">
+                                            Skenirana koda: @scannedCode
+                                        </MudAlert>
+                                    }
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudCard Class="mt-4">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Class="mb-3">Postavke dobavnice</MudText>
+                            
+                            @if (model.Items.Any())
+                            {
+                                <MudSimpleTable Style="overflow-x: auto;" Class="mb-4">
+                                    <thead>
+                                        <tr>
+                                            <th>Orodje</th>
+                                            <th>Količina</th>
+                                            <th>Cena/kos</th>
+                                            <th>Skupaj</th>
+                                            <th>Akcije</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in model.Items)
+                                        {
+                                            var tool = tools?.FirstOrDefault(t => t.Id == item.ToolId);
+                                            <tr>
+                                                <td>@(tool != null ? $"{tool.Code} - {tool.Name}" : "Neznano orodje")</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.UnitPrice.ToString("C")</td>
+                                                <td>@((item.Quantity * item.UnitPrice).ToString("C"))</td>
+                                                <td>
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                                   Color="Color.Error" 
+                                                                   Size="Size.Small" 
+                                                                   OnClick="() => RemoveItem(item)" />
+                                                </td>
+                                            </tr>
+                                        }
+                                        <tr>
+                                            <td colspan="3" style="text-align: right;"><strong>Skupaj:</strong></td>
+                                            <td><strong>@model.Items.Sum(x => x.Quantity * x.UnitPrice).ToString("C")</strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </MudSimpleTable>
+                            }
+                            
+                            <MudGrid>
+                                <MudItem xs="12" md="5">
+                                    <MudAutocomplete T="ToolDto"
+                                                     Label="Orodje"
+                                                     @bind-Value="selectedTool"
+                                                     SearchFunc="@SearchTools"
+                                                     ToStringFunc="@(tool => tool == null ? null : $"{tool.Code} - {tool.Name}")"
+                                                     Variant="Variant.Outlined"
+                                                     ShowProgressIndicator="true"
+                                                     MinCharacters="0"
+                                                     MaxItems="100"
+                                                     Dense="true"
+                                                     ResetValueOnEmptyText="true"
+                                                     CoerceText="false" />
+                                </MudItem>
+                                <MudItem xs="12" md="2">
+                                    <MudNumericField T="int" 
+                                                     Label="Količina" 
+                                                     @bind-Value="newItemQuantity" 
+                                                     Min="1" 
+                                                     Variant="Variant.Outlined" />
+                                </MudItem>
+                                <MudItem xs="12" md="3">
+                                    <MudNumericField T="decimal" 
+                                                     Label="Cena/kos" 
+                                                     @bind-Value="newItemPrice" 
+                                                     Min="0.01m" 
+                                                     Format="F2" 
+                                                     Variant="Variant.Outlined" />
+                                </MudItem>
+                                <MudItem xs="12" md="2" Class="d-flex align-center">
+                                    <MudButton Variant="Variant.Filled" 
+                                               Color="Color.Primary" 
+                                               StartIcon="@Icons.Material.Filled.Add" 
+                                               OnClick="AddItem"
+                                               Disabled="@(selectedTool == null || newItemQuantity <= 0 || newItemPrice <= 0)">
+                                        Dodaj
+                                    </MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
+                        <MudButton OnClick="HandleCancel">Prekliči</MudButton>
+                        <MudButton Color="Color.Primary" 
+                                   Variant="Variant.Filled"
+                                   OnClick="HandleSubmit"
+                                   Disabled="@(!IsValid() || isSubmitting)">
+                            Shrani dobavnico
+                        </MudButton>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+    
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+    
+    private CreateDeliveryNoteDto model = new();
+    private DateTime? deliveryDate = DateTime.Today;
+    private bool isSubmitting = false;
+    private string scannedCode = string.Empty;
+    
+    private List<SupplierDto>? suppliers;
+    private List<ToolDto>? tools;
+    private ToolDto? selectedTool;
+    private int newItemQuantity = 1;
+    private decimal newItemPrice = 0.00m;
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible)
+        {
+            await LoadData();
+            model = new CreateDeliveryNoteDto
+            {
+                DeliveryDate = DateTime.Today
+            };
+            deliveryDate = DateTime.Today;
+            scannedCode = string.Empty;
+            selectedTool = null;
+            newItemQuantity = 1;
+            newItemPrice = 0.00m;
+        }
+    }
+    
+    private async Task LoadData()
+    {
+        try
+        {
+            var suppliersTask = SupplierService.GetActiveSuppliersAsync();
+            var toolsTask = ToolService.GetAllToolsAsync();
+            
+            await Task.WhenAll(suppliersTask, toolsTask);
+            
+            suppliers = await suppliersTask;
+            tools = await toolsTask;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju podatkov: {ex.Message}", Severity.Error);
+        }
+    }
+    
+    private async Task<IEnumerable<ToolDto>> SearchTools(string value, CancellationToken cancellationToken)
+    {
+        if (tools == null)
+            return new List<ToolDto>();
+        
+        if (string.IsNullOrEmpty(value))
+            return await Task.FromResult(tools.Take(20)); // Prikaži prvih 20 orodij
+            
+        return await Task.FromResult(tools.Where(t =>
+            t.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            t.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
+        ).Take(20));
+    }
+    
+    private void HandleScannedCode(string code)
+    {
+        scannedCode = code;
+        
+        // Poskusi razčleniti QR kodo
+        var parts = code.Split('|');
+        if (parts.Length >= 3)
+        {
+            model.DeliveryNoteNumber = parts[0];
+            if (DateTime.TryParse(parts[1], out var date))
+            {
+                deliveryDate = date;
+                model.DeliveryDate = date;
+            }
+            
+            // Poskusi najti dobavitelja po imenu
+            var supplierName = parts[2];
+            var supplier = suppliers?.FirstOrDefault(s => 
+                s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
+            if (supplier != null)
+            {
+                model.SupplierId = supplier.Id;
+            }
+            
+            Snackbar.Add("Podatki dobavnice uspešno prebrani iz QR kode", Severity.Success);
+        }
+        else
+        {
+            // Če ni v pričakovanem formatu, preveri ali je to koda orodja
+            var tool = tools?.FirstOrDefault(t => t.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+            if (tool != null)
+            {
+                selectedTool = tool;
+                Snackbar.Add($"Orodje {tool.Name} prebrano iz QR kode", Severity.Success);
+            }
+            else
+            {
+                model.DeliveryNoteNumber = code;
+                Snackbar.Add("QR koda prebrana kot številka dobavnice", Severity.Info);
+            }
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void AddItem()
+    {
+        if (selectedTool != null && newItemQuantity > 0 && newItemPrice > 0)
+        {
+            // Preveri če orodje že obstaja v seznamu
+            var existingItem = model.Items.FirstOrDefault(i => i.ToolId == selectedTool.Id);
+            if (existingItem != null)
+            {
+                existingItem.Quantity += newItemQuantity;
+                Snackbar.Add("Količina obstoječega orodja je bila posodobljena", Severity.Info);
+            }
+            else
+            {
+                model.Items.Add(new CreateDeliveryNoteItemDto
+                {
+                    ToolId = selectedTool.Id,
+                    Quantity = newItemQuantity,
+                    UnitPrice = newItemPrice
+                });
+                Snackbar.Add("Postavka dodana", Severity.Success);
+            }
+            
+            // Počisti polja
+            selectedTool = null;
+            newItemQuantity = 1;
+            newItemPrice = 0.00m;
+        }
+    }
+    
+    private void RemoveItem(CreateDeliveryNoteItemDto item)
+    {
+        model.Items.Remove(item);
+        Snackbar.Add("Postavka odstranjena", Severity.Info);
+    }
+    
+    private bool IsValid()
+    {
+        return !string.IsNullOrWhiteSpace(model.DeliveryNoteNumber) &&
+               model.SupplierId > 0 &&
+               deliveryDate.HasValue &&
+               model.Items.Any();
+    }
+    
+    private async Task HandleSubmit()
+    {
+        if (!IsValid())
+            return;
+            
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+            
+            model.DeliveryDate = deliveryDate!.Value;
+            
+            await DeliveryNoteService.CreateDeliveryNoteAsync(model);
+            Snackbar.Add("Dobavnica je bila uspešno ustvarjena.", Severity.Success);
+            
+            await OnResult.InvokeAsync(true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    
+    private async Task HandleCancel()
+    {
+        await OnResult.InvokeAsync(false);
+    }
+}
+
+<style>
+    /* Prepreči hover animacije le v tem dialogu */
+    .delivery-note-dialog .mud-card, 
+    .delivery-note-dialog .mud-paper,
+    .delivery-note-dialog .mud-input,
+    .delivery-note-dialog .mud-select,
+    .delivery-note-dialog .mud-autocomplete {
+        transition: none !important;
+    }
+    
+    .delivery-note-dialog .mud-card:hover, 
+    .delivery-note-dialog .mud-paper:hover {
+        transform: none !important;
+        box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12) !important;
+    }
+</style>

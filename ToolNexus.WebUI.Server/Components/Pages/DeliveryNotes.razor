@@ -1,0 +1,308 @@
+@page "/delivery-notes"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@inject IDeliveryNoteService DeliveryNoteService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.DeliveryNotes
+@using ToolNexus.Application.DeliveryNotes.DTOs
+@using ToolNexus.WebUI.Server.Components.Dialogs
+
+<PageTitle>Dobavnice - ToolNexus</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Dobavnice</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="CreateDeliveryNote">
+                    Nova dobavnica
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        @if (deliveryNotes == null)
+        {
+            <MudPaper Elevation="2" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Nalagam dobavnice...</MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-4">Seznam dobavnic</MudText>
+                        
+                        @if (deliveryNotes.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info">
+                                V sistemu trenutno ni dobavnic.
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudTextField @bind-Value="searchString" 
+                                          Placeholder="Išči po številki, dobavitelju..." 
+                                          Adornment="Adornment.Start" 
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Immediate="true"
+                                          DebounceInterval="300"
+                                          Class="mb-4" />
+                            
+                            <MudList T="DeliveryNoteDto" @bind-SelectedValue="selectedDeliveryNote" 
+                                     Color="Color.Primary">
+                                @foreach (var note in FilteredDeliveryNotes)
+                                {
+                                    <MudListItem T="DeliveryNoteDto" Value="@note" 
+                                                 OnClick="@(() => SelectDeliveryNote(note))">
+                                        <MudStack Spacing="0">
+                                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.subtitle1">@note.DeliveryNoteNumber</MudText>
+                                                <MudText Typo="Typo.body2">@note.TotalAmount.ToString("C")</MudText>
+                                            </MudStack>
+                                            <MudText Typo="Typo.body2">@note.SupplierName</MudText>
+                                            <MudText Typo="Typo.caption">@note.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
+                                        </MudStack>
+                                    </MudListItem>
+                                    <MudDivider />
+                                }
+                            </MudList>
+                        }
+                    </MudPaper>
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-4">Podrobnosti dobavnice</MudText>
+                        
+                        @if (selectedDeliveryNote == null)
+                        {
+                            <MudAlert Severity="Severity.Info">
+                                Izberite dobavnico za prikaz podrobnosti.
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudStack Spacing="3">
+                                <MudGrid>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption">Številka dobavnice</MudText>
+                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.DeliveryNoteNumber</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption">Datum</MudText>
+                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudText Typo="Typo.caption">Dobavitelj</MudText>
+                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.SupplierName</MudText>
+                                    </MudItem>
+                                    @if (!string.IsNullOrEmpty(selectedDeliveryNote.Notes))
+                                    {
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.caption">Opombe</MudText>
+                                            <MudText Typo="Typo.body1">@selectedDeliveryNote.Notes</MudText>
+                                        </MudItem>
+                                    }
+                                </MudGrid>
+                                
+                                <MudDivider />
+                                
+                                <MudText Typo="Typo.h6">Postavke</MudText>
+                                
+                                @if (selectedDeliveryNoteDetails == null)
+                                {
+                                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                                }
+                                else if (selectedDeliveryNoteDetails.Items.Count == 0)
+                                {
+                                    <MudAlert Severity="Severity.Info">Ta dobavnica nima postavk.</MudAlert>
+                                }
+                                else
+                                {
+                                    <MudSimpleTable Style="overflow-x: auto;">
+                                        <thead>
+                                            <tr>
+                                                <th>Koda</th>
+                                                <th>Orodje</th>
+                                                <th>Količina</th>
+                                                <th>Cena/kos</th>
+                                                <th>Skupaj</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in selectedDeliveryNoteDetails.Items)
+                                            {
+                                                <tr>
+                                                    <td>@item.ToolCode</td>
+                                                    <td>@item.ToolName</td>
+                                                    <td>@item.Quantity</td>
+                                                    <td>@item.UnitPrice.ToString("C")</td>
+                                                    <td>@item.TotalPrice.ToString("C")</td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td colspan="4" style="text-align: right;"><strong>Skupaj:</strong></td>
+                                                <td><strong>@selectedDeliveryNoteDetails.TotalAmount.ToString("C")</strong></td>
+                                            </tr>
+                                        </tbody>
+                                    </MudSimpleTable>
+                                }
+                                
+                                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
+                                    <MudButton Color="Color.Error" 
+                                              Variant="Variant.Outlined"
+                                              StartIcon="@Icons.Material.Filled.Delete"
+                                              OnClick="@(() => DeleteDeliveryNote(selectedDeliveryNote))">
+                                        Izbriši
+                                    </MudButton>
+                                </MudStack>
+                            </MudStack>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+<DeliveryNoteFormDialog IsVisible="@showDeliveryNoteDialog"
+                        OnResult="HandleDeliveryNoteDialogResult" />
+
+@if (showDeleteDialog)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
+                <MudText Typo="Typo.body1">@deleteMessage</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija bo trajno izbrisala dobavnico in povrnila zalogo orodij.</MudText>
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private List<DeliveryNoteDto>? deliveryNotes;
+    private DeliveryNoteDto? selectedDeliveryNote;
+    private DeliveryNoteDto? selectedDeliveryNoteDetails;
+    private string searchString = string.Empty;
+    private bool showDeliveryNoteDialog = false;
+    private bool showDeleteDialog = false;
+    private string deleteMessage = string.Empty;
+    private DeliveryNoteDto? deliveryNoteToDelete;
+
+    private List<DeliveryNoteDto> FilteredDeliveryNotes => deliveryNotes?.Where(dn =>
+        string.IsNullOrWhiteSpace(searchString) ||
+        dn.DeliveryNoteNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+        dn.SupplierName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+        (dn.Notes?.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
+    ).ToList() ?? new List<DeliveryNoteDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDeliveryNotes();
+    }
+
+    private async Task LoadDeliveryNotes()
+    {
+        try
+        {
+            deliveryNotes = await DeliveryNoteService.GetAllDeliveryNotesAsync();
+            
+            // If a delivery note was selected, reload its details
+            if (selectedDeliveryNote != null)
+            {
+                var updatedNote = deliveryNotes.FirstOrDefault(dn => dn.Id == selectedDeliveryNote.Id);
+                if (updatedNote != null)
+                {
+                    await SelectDeliveryNote(updatedNote);
+                }
+                else
+                {
+                    selectedDeliveryNote = null;
+                    selectedDeliveryNoteDetails = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju dobavnic: {ex.Message}", Severity.Error);
+            deliveryNotes = new List<DeliveryNoteDto>();
+        }
+    }
+
+    private async Task SelectDeliveryNote(DeliveryNoteDto note)
+    {
+        selectedDeliveryNote = note;
+        selectedDeliveryNoteDetails = null;
+        StateHasChanged();
+        
+        try
+        {
+            selectedDeliveryNoteDetails = await DeliveryNoteService.GetDeliveryNoteByIdAsync(note.Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju podrobnosti: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CreateDeliveryNote()
+    {
+        showDeliveryNoteDialog = true;
+    }
+
+    private async Task HandleDeliveryNoteDialogResult(bool success)
+    {
+        showDeliveryNoteDialog = false;
+        if (success)
+        {
+            await LoadDeliveryNotes();
+        }
+    }
+
+    private void DeleteDeliveryNote(DeliveryNoteDto deliveryNote)
+    {
+        deliveryNoteToDelete = deliveryNote;
+        deleteMessage = $"Ali ste prepričani, da želite izbrisati dobavnico {deliveryNote.DeliveryNoteNumber}?";
+        showDeleteDialog = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteDialog = false;
+        if (deliveryNoteToDelete != null)
+        {
+            try
+            {
+                await DeliveryNoteService.DeleteDeliveryNoteAsync(deliveryNoteToDelete.Id);
+                Snackbar.Add($"Dobavnica {deliveryNoteToDelete.DeliveryNoteNumber} je bila uspešno izbrisana.", Severity.Success);
+                selectedDeliveryNote = null;
+                selectedDeliveryNoteDetails = null;
+                await LoadDeliveryNotes();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri brisanju dobavnice: {ex.Message}", Severity.Error);
+            }
+        }
+        deliveryNoteToDelete = null;
+    }
+}

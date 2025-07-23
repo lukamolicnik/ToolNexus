@@ -3,11 +3,11 @@
 @attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
 @inject IToolCategoryService CategoryService
 @inject ISnackbar Snackbar
-@using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.ToolCategories
+@using ToolNexus.Application.ToolCategories.DTOs
 @using ToolNexus.WebUI.Server.Components.Dialogs
-@using ToolNexus.Application.DTOs
-@using ToolNexus.Application.Interfaces
 @using ToolNexus.WebUI.Server.Components.Shared
 
 <PageTitle>Kategorije orodij - ToolNexus</PageTitle>
@@ -65,11 +65,7 @@
                            SearchFunc="@((category, search) => CategorySearchFunc(category, search))">
                 <ColumnsTemplate>
                     <PropertyColumn T="ToolCategoryDto" TProperty="int" Property="x => x.Id" Title="ID" Sortable="true" Filterable="false" />
-                    <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Code" Title="Koda" Sortable="true" Filterable="true">
-                        <CellTemplate Context="categoryContext">
-                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@categoryContext.Item.Code</MudChip>
-                        </CellTemplate>
-                    </PropertyColumn>
+                    <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Code" Title="Koda" Sortable="true" Filterable="true" />
                     <PropertyColumn T="ToolCategoryDto" TProperty="string" Property="x => x.Name" Title="Naziv" />
                     <TemplateColumn T="ToolCategoryDto" Title="Opis">
                         <CellTemplate Context="categoryContext">

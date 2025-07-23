@@ -1,0 +1,164 @@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+
+<div class="qr-scanner-container">
+    @if (!_isScanning)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.QrCodeScanner" OnClick="StartScanning" FullWidth="true">
+            Skeniraj QR/črtno kodo
+        </MudButton>
+    }
+    else
+    {
+        <div class="scanner-active">
+            <div id="qr-video-container">
+                <!-- Html5-QRCode bo tukaj ustvaril svoj video element -->
+            </div>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="StopScanning" Class="mt-3">
+                Ustavi skeniranje
+            </MudButton>
+            <MudText Typo="Typo.caption" Class="mt-2" Color="Color.Info">
+                Usmeri kamero na QR ali črtno kodo
+            </MudText>
+            <MudText Typo="Typo.caption" Class="mt-1" Color="Color.Secondary">
+                Podprti formati: QR, Code128, Code39, EAN-13/8, UPC-A/E
+            </MudText>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Parameter] public EventCallback<string> OnCodeScanned { get; set; }
+    
+    private bool _isScanning = false;
+    private IJSObjectReference? _jsModule;
+    private DotNetObjectReference<QRCodeScanner>? _objRef;
+    private ScanMode _scanMode = ScanMode.Auto;
+    
+    private enum ScanMode
+    {
+        Auto,
+        Barcode,
+        QR
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            // Uporabi novo Html5-QRCode implementacijo
+            _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/barcodeScanner.js");
+        }
+    }
+    
+    private void SetScanMode(ScanMode mode)
+    {
+        _scanMode = mode;
+    }
+
+    private async Task StartScanning()
+    {
+        _isScanning = true;
+        StateHasChanged();
+        
+        await Task.Delay(100);
+        
+        if (_jsModule != null && _objRef != null)
+        {
+            await _jsModule.InvokeVoidAsync("startScanning", _objRef, "auto");
+        }
+    }
+
+    private async Task StopScanning()
+    {
+        _isScanning = false;
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("stopScanning");
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnCodeDetected(string code)
+    {
+        _isScanning = false;
+        await OnCodeScanned.InvokeAsync(code);
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("stopScanning");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("stopScanning");
+            await _jsModule.DisposeAsync();
+        }
+        _objRef?.Dispose();
+    }
+}
+
+<style>
+    .qr-scanner-container {
+        padding: 10px;
+        text-align: center;
+        max-width: 100%;
+    }
+    
+    .scanner-active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+    
+    #qr-video-container {
+        border: 2px solid #1976d2;
+        border-radius: 8px;
+        overflow: hidden;
+        width: 100%;
+        max-width: 500px;
+        position: relative;
+    }
+    
+    /* Html5Qrcode specifični stili */
+    #qr-video-container > div {
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    #qr-video-container video {
+        width: 100% !important;
+        height: auto !important;
+        display: block;
+        object-fit: cover;
+    }
+    
+    #qr-video-container canvas {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    /* Odstrani Html5Qrcode privzete stile */
+    #qr-video-container > div > div {
+        padding: 0 !important;
+        border: none !important;
+    }
+    
+    /* Prepreči overflow na manjših zaslonih */
+    @@media (max-width: 600px) {
+        .qr-scanner-container {
+            padding: 5px;
+        }
+        
+        #qr-video-container {
+            max-width: 100%;
+        }
+    }
+</style>

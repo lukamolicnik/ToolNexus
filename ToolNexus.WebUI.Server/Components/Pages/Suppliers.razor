@@ -1,0 +1,243 @@
+@page "/suppliers"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@inject ISupplierService SupplierService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.Suppliers
+@using ToolNexus.Application.Suppliers.DTOs
+@using ToolNexus.WebUI.Server.Components.Dialogs
+@using ToolNexus.WebUI.Server.Components.Shared
+
+<PageTitle>Dobavitelji - ToolNexus</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Dobavitelji</MudText>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Filled" 
+                          Color="Color.Primary" 
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="CreateSupplier">
+                    Dodaj dobavitelja
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        @if (suppliers == null)
+        {
+            <MudPaper Elevation="2" Class="pa-8">
+                <MudStack Spacing="4" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6">Nalagam dobavitelje...</MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else if (suppliers.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="Icons.Material.Filled.Info" Size="Size.Large" />
+                    <MudText Typo="Typo.h6">Ni dobaviteljev</MudText>
+                    <MudText Typo="Typo.body1">V sistemu trenutno ni registriranih dobaviteljev.</MudText>
+                </MudStack>
+            </MudAlert>
+        }
+        else
+        {
+            <EntityDataGrid TItem="SupplierDto"
+                           Title="Seznam dobaviteljev"
+                           Icon="@Icons.Material.Filled.LocalShipping"
+                           Items="suppliers"
+                           Loading="isLoading"
+                           OnView="ViewSupplier"
+                           OnEdit="EditSupplier"
+                           OnDelete="DeleteSupplier"
+                           CanEdit="@(supplier => true)"
+                           CanDelete="@(supplier => true)"
+                           SearchFunc="@((supplier, search) => SupplierSearchFunc(supplier, search))">
+                <ColumnsTemplate>
+                    <PropertyColumn T="SupplierDto" TProperty="int" Property="x => x.Id" Title="ID" Sortable="true" />
+                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Name" Title="Naziv" Sortable="true" />
+                    <TemplateColumn T="SupplierDto" Title="Email">
+                        <CellTemplate Context="supplierContext">
+                            @if (!string.IsNullOrEmpty(supplierContext.Item.Email))
+                            {
+                                <MudLink Href="@($"mailto:{supplierContext.Item.Email}")">@supplierContext.Item.Email</MudLink>
+                            }
+                            else
+                            {
+                                <MudText>-</MudText>
+                            }
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Phone ?? string.Empty" Title="Telefon" />
+                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Address ?? string.Empty" Title="Naslov" />
+                    <TemplateColumn T="SupplierDto" Title="Status">
+                        <CellTemplate Context="supplierContext">
+                            <MudChip T="string" Size="Size.Small" 
+                                     Color="@(supplierContext.Item.IsActive ? Color.Success : Color.Error)">
+                                @(supplierContext.Item.IsActive ? "Aktiven" : "Neaktiven")
+                            </MudChip>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <TemplateColumn T="SupplierDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt">
+                        <CellTemplate Context="supplierContext">
+                            <MudText>@supplierContext.Item.CreatedAt.ToString("dd.MM.yyyy")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </ColumnsTemplate>
+            </EntityDataGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+<SupplierFormDialog IsVisible="@showSupplierDialog"
+                    Supplier="@selectedSupplier"
+                    IsEdit="@isEditMode"
+                    IsViewOnly="@isViewOnly"
+                    OnResult="HandleSupplierDialogResult" />
+
+@if (showDeleteDialog)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 400px; width: 90vw;">
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h6">Potrditev brisanja</MudText>
+                <MudText Typo="Typo.body1">@deleteMessage</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Error">Ta operacija bo trajno izbrisala dobavitelja iz sistema.</MudText>
+                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                    <MudButton OnClick="() => showDeleteDialog = false">Prekliči</MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="ConfirmDelete">Izbriši</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private List<SupplierDto>? suppliers;
+    private SupplierDto? selectedSupplier;
+    private bool isLoading = false;
+    private bool showSupplierDialog = false;
+    private bool isEditMode = false;
+    private bool isViewOnly = false;
+    private bool showDeleteDialog = false;
+    private string deleteMessage = string.Empty;
+    private SupplierDto? supplierToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSuppliers();
+    }
+
+    private async Task LoadSuppliers()
+    {
+        try
+        {
+            isLoading = true;
+            suppliers = await SupplierService.GetAllSuppliersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju dobaviteljev: {ex.Message}", Severity.Error);
+            suppliers = new List<SupplierDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool SupplierSearchFunc(SupplierDto supplier, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        return supplier.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+               (!string.IsNullOrEmpty(supplier.Email) && supplier.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase)) ||
+               (!string.IsNullOrEmpty(supplier.Phone) && supplier.Phone.Contains(searchString, StringComparison.OrdinalIgnoreCase)) ||
+               (!string.IsNullOrEmpty(supplier.Address) && supplier.Address.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private Task CreateSupplier()
+    {
+        selectedSupplier = null;
+        isEditMode = false;
+        isViewOnly = false;
+        showSupplierDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ViewSupplier(SupplierDto supplier)
+    {
+        selectedSupplier = supplier;
+        isEditMode = false;
+        isViewOnly = true;
+        showSupplierDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task EditSupplier(SupplierDto supplier)
+    {
+        selectedSupplier = supplier;
+        isEditMode = true;
+        isViewOnly = false;
+        showSupplierDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task DeleteSupplier(SupplierDto supplier)
+    {
+        supplierToDelete = supplier;
+        
+        // Check if supplier can be deleted
+        var canDelete = await SupplierService.CanDeleteSupplierAsync(supplier.Id);
+        if (!canDelete)
+        {
+            Snackbar.Add("Dobavitelja ni mogoče izbrisati, ker ima povezane dobavnice.", Severity.Warning);
+            return;
+        }
+        
+        deleteMessage = $"Ali ste prepričani, da želite izbrisati dobavitelja {supplier.Name}?";
+        showDeleteDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task HandleSupplierDialogResult(bool success)
+    {
+        showSupplierDialog = false;
+        if (success)
+        {
+            await LoadSuppliers();
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteDialog = false;
+        if (supplierToDelete != null)
+        {
+            try
+            {
+                await SupplierService.DeleteSupplierAsync(supplierToDelete.Id);
+                Snackbar.Add($"Dobavitelj {supplierToDelete.Name} je bil uspešno izbrisan.", Severity.Success);
+                await LoadSuppliers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Napaka pri brisanju dobavitelja: {ex.Message}", Severity.Error);
+            }
+        }
+        supplierToDelete = null;
+    }
+}

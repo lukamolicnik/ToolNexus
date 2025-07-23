@@ -87,9 +87,17 @@ namespace ToolNexus.Infrastructure.Interceptors
                     {
                         entry.Property("CreatedBy").CurrentValue = currentUser;
                     }
+                    if (entityType.GetProperty("CreatedAt") != null)
+                    {
+                        entry.Property("CreatedAt").CurrentValue = DateTime.UtcNow;
+                    }
                     if (entityType.GetProperty("UpdatedBy") != null)
                     {
                         entry.Property("UpdatedBy").CurrentValue = currentUser;
+                    }
+                    if (entityType.GetProperty("UpdatedAt") != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
                     }
                 }
                 else if (entry.State == EntityState.Modified)

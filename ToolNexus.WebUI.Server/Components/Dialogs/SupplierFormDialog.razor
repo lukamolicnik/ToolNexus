@@ -1,0 +1,225 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using ToolNexus.Application.Suppliers
+@using ToolNexus.Application.Suppliers.DTOs
+@inject ISnackbar Snackbar
+@inject ISupplierService SupplierService
+
+@if (IsVisible)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6 supplier-dialog" Style="max-width: 500px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">@GetDialogTitle()</MudText>
+                    <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
+                </MudStack>
+
+                @if (IsViewOnly)
+                {
+                    <MudStack Spacing="3">
+                        <MudTextField Value="@Supplier?.Name" Label="Naziv" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudTextField Value="@Supplier?.Email" Label="Email" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudTextField Value="@Supplier?.Phone" Label="Telefon" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudTextField Value="@Supplier?.Address" Label="Naslov" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
+                        <MudChip T="string" Color="@(Supplier?.IsActive == true ? Color.Success : Color.Error)">
+                            @(Supplier?.IsActive == true ? "Aktiven" : "Neaktiven")
+                        </MudChip>
+                        <MudTextField Value="@Supplier?.CreatedBy" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudTextField Value="@Supplier?.CreatedAt.ToString("dd.MM.yyyy HH:mm")" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                        
+                        <MudStack Row="true" Justify="Justify.FlexEnd">
+                            <MudButton OnClick="HandleCancel">Zapri</MudButton>
+                        </MudStack>
+                    </MudStack>
+                }
+                else if (isSubmitting)
+                {
+                    <MudStack Spacing="4" AlignItems="AlignItems.Center" Class="pa-4">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                        <MudText Typo="Typo.body1">@(IsEdit ? "Posodabljam dobavitelja..." : "Ustvarjam dobavitelja...")</MudText>
+                    </MudStack>
+                }
+                else
+                {
+                    <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <MudStack Spacing="3">
+                            
+                            @if (IsEdit)
+                            {
+                                <MudTextField @bind-Value="updateModel.Name"
+                                              For="@(() => updateModel.Name)"
+                                              Label="Naziv"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+
+                                <MudTextField @bind-Value="updateModel.Email"
+                                              For="@(() => updateModel.Email)"
+                                              Label="Email"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Email" />
+
+                                <MudTextField @bind-Value="updateModel.Phone"
+                                              For="@(() => updateModel.Phone)"
+                                              Label="Telefon"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Telephone" />
+
+                                <MudTextField @bind-Value="updateModel.Address"
+                                              For="@(() => updateModel.Address)"
+                                              Label="Naslov"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            }
+                            else
+                            {
+                                <MudTextField @bind-Value="createModel.Name"
+                                              For="@(() => createModel.Name)"
+                                              Label="Naziv"
+                                              Variant="Variant.Outlined"
+                                              Required="true" />
+
+                                <MudTextField @bind-Value="createModel.Email"
+                                              For="@(() => createModel.Email)"
+                                              Label="Email"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Email" />
+
+                                <MudTextField @bind-Value="createModel.Phone"
+                                              For="@(() => createModel.Phone)"
+                                              Label="Telefon"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Telephone" />
+
+                                <MudTextField @bind-Value="createModel.Address"
+                                              For="@(() => createModel.Address)"
+                                              Label="Naslov"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            }
+
+                            @if (IsEdit)
+                            {
+                                <MudSwitch @bind-Value="isActive" Label="Aktiven" Color="Color.Primary" />
+                            }
+
+                            <ValidationSummary />
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                                <MudButton OnClick="HandleCancel">Prekliči</MudButton>
+                                <MudButton ButtonType="ButtonType.Submit" 
+                                          Color="Color.Primary" 
+                                          Variant="Variant.Filled"
+                                          Disabled="isSubmitting">
+                                    @(IsEdit ? "Posodobi" : "Ustvari")
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </EditForm>
+                }
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public SupplierDto? Supplier { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public bool IsViewOnly { get; set; }
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+    
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+    
+    private CreateSupplierDto createModel = new();
+    private UpdateSupplierDto updateModel = new();
+    private EditContext editContext = default!;
+    private bool isSubmitting = false;
+    private bool isActive = true;
+    
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !IsViewOnly)
+        {
+            if (IsEdit && Supplier != null)
+            {
+                updateModel = new UpdateSupplierDto
+                {
+                    Id = Supplier.Id,
+                    Name = Supplier.Name,
+                    Email = Supplier.Email,
+                    Phone = Supplier.Phone,
+                    Address = Supplier.Address,
+                    IsActive = Supplier.IsActive
+                };
+                isActive = Supplier.IsActive;
+                editContext = new EditContext(updateModel);
+            }
+            else
+            {
+                createModel = new CreateSupplierDto();
+                editContext = new EditContext(createModel);
+            }
+        }
+    }
+    
+    private string GetDialogTitle()
+    {
+        if (IsViewOnly) return "Podrobnosti dobavitelja";
+        return IsEdit ? "Uredi dobavitelja" : "Dodaj dobavitelja";
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+            
+            if (IsEdit)
+            {
+                updateModel.IsActive = isActive;
+                await SupplierService.UpdateSupplierAsync(updateModel);
+                Snackbar.Add("Dobavitelj je bil uspešno posodobljen.", Severity.Success);
+            }
+            else
+            {
+                await SupplierService.CreateSupplierAsync(createModel);
+                Snackbar.Add("Dobavitelj je bil uspešno ustvarjen.", Severity.Success);
+            }
+            
+            await OnResult.InvokeAsync(true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    
+    private async Task HandleCancel()
+    {
+        await OnResult.InvokeAsync(false);
+    }
+}
+
+<style>
+    /* Prepreči hover animacije le v tem dialogu */
+    .supplier-dialog .mud-card, 
+    .supplier-dialog .mud-paper,
+    .supplier-dialog .mud-input,
+    .supplier-dialog .mud-select {
+        transition: none !important;
+    }
+    
+    .supplier-dialog .mud-card:hover, 
+    .supplier-dialog .mud-paper:hover {
+        transform: none !important;
+        box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12) !important;
+    }
+</style>

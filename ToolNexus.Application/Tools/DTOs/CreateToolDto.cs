@@ -21,5 +21,11 @@ namespace ToolNexus.Application.Tools.DTOs
         public string? Description { get; set; }
 
         public int? ToolCategoryId { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Minimalna zaloga mora biti pozitivna")]
+        public int MinimumStock { get; set; } = 0;
+
+        [Range(0, int.MaxValue, ErrorMessage = "Kritična zaloga mora biti pozitivna")]
+        public int CriticalStock { get; set; } = 0;
     }
 }
