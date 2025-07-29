@@ -5,6 +5,7 @@ using ToolNexus.Application.Users;
 using ToolNexus.Application.Suppliers;
 using ToolNexus.Application.DeliveryNotes;
 using ToolNexus.Application.ToolCategories;
+using ToolNexus.Application.StockAdjustments;
 
 namespace ToolNexus.Application
 {
@@ -27,6 +28,9 @@ namespace ToolNexus.Application
 
             // Delivery Note services
             services.AddScoped<IDeliveryNoteService, DeliveryNoteService>();
+
+            // Stock Adjustment services
+            services.AddScoped<IStockAdjustmentService, StockAdjustmentService>();
 
             return services;
         }

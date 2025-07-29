@@ -106,11 +106,19 @@
                     </TemplateColumn>
                 </ColumnsTemplate>
                 <ActionsTemplate Context="tool">
-                    <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" 
-                                 Color="Color.Success" 
+                    @if (canEdit)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" 
+                                     Color="Color.Success" 
+                                     Size="Size.Small"
+                                     Title="Povečaj zalogo"
+                                     OnClick="@(() => AdjustStock(tool, true))" />
+                    }
+                    <MudIconButton Icon="@Icons.Material.Filled.Remove" 
+                                 Color="Color.Warning" 
                                  Size="Size.Small"
-                                 Title="Izposodi"
-                                 OnClick="@(() => LoanTool(tool))" />
+                                 Title="Zmanjšaj zalogo"
+                                 OnClick="@(() => AdjustStock(tool, false))" />
                 </ActionsTemplate>
             </EntityDataGrid>
         }
@@ -122,6 +130,11 @@
                      IsEdit="@isEditMode"
                      IsViewOnly="@isViewOnly"
                      OnResult="HandleToolDialogResult" />
+
+<StockAdjustmentDialog IsVisible="@showStockDialog"
+                       Tool="@selectedTool"
+                       IsIncreaseMode="@isIncreaseMode"
+                       OnResult="HandleStockDialogResult" />
 
 @if (showDeleteDialog)
 {
@@ -154,6 +167,7 @@
     private string deleteMessage = string.Empty;
     private ToolDto? toolToDelete;
     private DateTime? dateFilter;
+    private bool showStockDialog = false;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
@@ -170,6 +184,7 @@
                     .Where(c => c.Type == ClaimTypes.Role)
                     .Select(c => c.Value)
                     .ToList();
+
 
                 canEdit = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
                 canDelete = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
@@ -300,10 +315,24 @@
         toolToDelete = null;
     }
 
-    private async Task LoanTool(ToolDto tool)
+    private bool isIncreaseMode = true;
+    
+    private Task AdjustStock(ToolDto tool, bool isIncrease)
     {
-        // TODO: Implement loan functionality
-        Snackbar.Add("Funkcionalnost izposoje bo dodana v naslednji fazi.", Severity.Info);
+        selectedTool = tool;
+        isIncreaseMode = isIncrease;
+        showStockDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleStockDialogResult(bool success)
+    {
+        showStockDialog = false;
+        if (success)
+        {
+            await LoadTools();
+        }
     }
 
     private void OnDateFilterChanged()

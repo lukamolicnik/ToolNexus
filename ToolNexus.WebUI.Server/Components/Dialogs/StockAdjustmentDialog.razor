@@ -1,0 +1,281 @@
+@inject IToolService ToolService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using ToolNexus.Application.Tools.DTOs
+@using System.ComponentModel.DataAnnotations
+
+@if (IsVisible)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 500px; width: 90vw;">
+            <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <MudStack Spacing="3">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h5">Upravljanje zaloge</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="HandleCancel" />
+                    </MudStack>
+
+                    @if (Tool != null)
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                            <MudStack>
+                                <MudText><strong>Orodje:</strong> @Tool.Name (@Tool.Code)</MudText>
+                                <MudText><strong>Trenutna zaloga:</strong> @Tool.CurrentStock</MudText>
+                                <MudText><strong>Minimalna zaloga:</strong> @Tool.MinimumStock | <strong>Kritična zaloga:</strong> @Tool.CriticalStock</MudText>
+                            </MudStack>
+                        </MudAlert>
+
+                        <MudRadioGroup @bind-Value="adjustmentModel.AdjustmentType">
+                            <MudRadio Value="StockAdjustmentType.Increase" Color="Color.Success" Disabled="@(!canIncrease)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                    <MudText>Povečaj zalogo</MudText>
+                                    @if (!canIncrease)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Error">(Ni dovoljenja)</MudText>
+                                    }
+                                </MudStack>
+                            </MudRadio>
+                            <MudRadio Value="StockAdjustmentType.Decrease" Color="Color.Error">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                                    <MudText>Zmanjšaj zalogo</MudText>
+                                </MudStack>
+                            </MudRadio>
+                        </MudRadioGroup>
+
+                        <MudNumericField @bind-Value="adjustmentModel.Quantity"
+                                         For="@(() => adjustmentModel.Quantity)"
+                                         Label="Količina"
+                                         Variant="Variant.Outlined"
+                                         Min="1"
+                                         Required="true"
+                                         HelperText="@GetQuantityHelperText()" />
+
+                        @if (adjustmentModel.AdjustmentType == StockAdjustmentType.Decrease)
+                        {
+                            <MudSelect @bind-Value="adjustmentModel.Reason"
+                                       For="@(() => adjustmentModel.Reason)"
+                                       Label="Razlog zmanjšanja"
+                                       Variant="Variant.Outlined"
+                                       Required="true">
+                                <MudSelectItem Value="@("Poškodovano")">Poškodovano</MudSelectItem>
+                                <MudSelectItem Value="@("Izgubljeno")">Izgubljeno</MudSelectItem>
+                                <MudSelectItem Value="@("Odpisano")">Odpisano</MudSelectItem>
+                                <MudSelectItem Value="@("Drugo")">Drugo</MudSelectItem>
+                            </MudSelect>
+                        }
+
+                        <MudTextField @bind-Value="adjustmentModel.Notes"
+                                      For="@(() => adjustmentModel.Notes)"
+                                      Label="Opombe"
+                                      Variant="Variant.Outlined"
+                                      Lines="3" />
+
+                        <MudAlert Severity="@(GetPreviewSeverity())" Variant="Variant.Outlined">
+                            <MudText>@GetPreviewMessage()</MudText>
+                        </MudAlert>
+
+                        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" OnClick="HandleCancel">
+                                Prekliči
+                            </MudButton>
+                            <MudButton ButtonType="ButtonType.Submit"
+                                       Variant="Variant.Filled"
+                                       Color="@(adjustmentModel.AdjustmentType == StockAdjustmentType.Increase ? Color.Success : Color.Error)"
+                                       Disabled="@(isSubmitting)">
+                                @if (isSubmitting)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                }
+                                else
+                                {
+                                    @(adjustmentModel.AdjustmentType == StockAdjustmentType.Increase ? "Povečaj" : "Zmanjšaj")
+                                }
+                            </MudButton>
+                        </MudStack>
+                    }
+                </MudStack>
+            </EditForm>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public ToolDto? Tool { get; set; }
+    [Parameter] public bool IsIncreaseMode { get; set; } = true;
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
+
+    private EditContext editContext = default!;
+    private StockAdjustmentModel adjustmentModel = new();
+    private bool isSubmitting = false;
+    private bool canIncrease = false;
+
+    protected override async void OnParametersSet()
+    {
+        if (IsVisible && Tool != null)
+        {
+            // Check user roles
+            var authState = await authenticationStateTask;
+            if (authState.User.Identity.IsAuthenticated)
+            {
+                var userRoles = authState.User.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+                    .ToList();
+                
+                canIncrease = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+            }
+            
+            // If user wants to increase but doesn't have permission, default to decrease
+            var effectiveMode = IsIncreaseMode && !canIncrease ? false : IsIncreaseMode;
+            
+            adjustmentModel = new StockAdjustmentModel
+            {
+                ToolId = Tool.Id,
+                AdjustmentType = effectiveMode ? StockAdjustmentType.Increase : StockAdjustmentType.Decrease,
+                Quantity = 1
+            };
+            
+            editContext = new EditContext(adjustmentModel);
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Tool == null) return;
+
+        // Custom validation for decrease
+        if (adjustmentModel.AdjustmentType == StockAdjustmentType.Decrease && string.IsNullOrWhiteSpace(adjustmentModel.Reason))
+        {
+            Snackbar.Add("Pri zmanjšanju zaloge je razlog obvezen!", Severity.Error);
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+
+            var authState = await authenticationStateTask;
+            var userId = authState.User.Identity?.Name ?? "system";
+
+            if (adjustmentModel.AdjustmentType == StockAdjustmentType.Increase)
+            {
+                await ToolService.IncreaseStockAsync(new IncreaseStockDto
+                {
+                    ToolId = Tool.Id,
+                    Quantity = adjustmentModel.Quantity,
+                    Notes = adjustmentModel.Notes,
+                    UserId = userId
+                });
+                Snackbar.Add($"Zaloga orodja {Tool.Name} je bila uspešno povečana za {adjustmentModel.Quantity}.", Severity.Success);
+            }
+            else
+            {
+                await ToolService.DecreaseStockAsync(new DecreaseStockDto
+                {
+                    ToolId = Tool.Id,
+                    Quantity = adjustmentModel.Quantity,
+                    Reason = adjustmentModel.Reason!,
+                    Notes = adjustmentModel.Notes,
+                    UserId = userId
+                });
+                Snackbar.Add($"Zaloga orodja {Tool.Name} je bila uspešno zmanjšana za {adjustmentModel.Quantity}.", Severity.Success);
+            }
+
+            await OnResult.InvokeAsync(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add($"Napaka: {ex.Message}", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri spreminjanju zaloge: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleCancel()
+    {
+        return OnResult.InvokeAsync(false);
+    }
+
+    private string GetQuantityHelperText()
+    {
+        if (Tool == null) return "";
+        
+        if (adjustmentModel.AdjustmentType == StockAdjustmentType.Decrease)
+        {
+            return $"Maksimalno: {Tool.CurrentStock}";
+        }
+        return "Vnesite količino za povečanje zaloge";
+    }
+
+    private Severity GetPreviewSeverity()
+    {
+        if (Tool == null) return Severity.Info;
+
+        var newStock = adjustmentModel.AdjustmentType == StockAdjustmentType.Increase
+            ? Tool.CurrentStock + adjustmentModel.Quantity
+            : Tool.CurrentStock - adjustmentModel.Quantity;
+
+        if (newStock <= Tool.CriticalStock)
+            return Severity.Error;
+        if (newStock <= Tool.MinimumStock)
+            return Severity.Warning;
+        
+        return Severity.Success;
+    }
+
+    private string GetPreviewMessage()
+    {
+        if (Tool == null) return "";
+
+        var newStock = adjustmentModel.AdjustmentType == StockAdjustmentType.Increase
+            ? Tool.CurrentStock + adjustmentModel.Quantity
+            : Tool.CurrentStock - adjustmentModel.Quantity;
+
+        if (newStock < 0)
+            return "⚠️ Zaloga ne more biti negativna!";
+
+        var stockStatus = newStock <= Tool.CriticalStock ? " (KRITIČNO!)" 
+            : newStock <= Tool.MinimumStock ? " (pod minimalno zalogo)" 
+            : "";
+
+        return $"Nova zaloga bo: {newStock}{stockStatus}";
+    }
+
+    public enum StockAdjustmentType
+    {
+        Increase,
+        Decrease
+    }
+
+    public class StockAdjustmentModel
+    {
+        public int ToolId { get; set; }
+
+        public StockAdjustmentType AdjustmentType { get; set; } = StockAdjustmentType.Increase;
+
+        [Required(ErrorMessage = "Količina je obvezna")]
+        [Range(1, int.MaxValue, ErrorMessage = "Količina mora biti vsaj 1")]
+        public int Quantity { get; set; } = 1;
+
+        public string? Reason { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}

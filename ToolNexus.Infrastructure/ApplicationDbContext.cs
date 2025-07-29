@@ -5,6 +5,7 @@ using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
 using ToolNexus.Domain.Suppliers;
 using ToolNexus.Domain.DeliveryNotes;
+using ToolNexus.Domain.StockAdjustments;
 
 namespace ToolNexus.Infrastructure
 {
@@ -23,6 +24,7 @@ namespace ToolNexus.Infrastructure
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<DeliveryNote> DeliveryNotes { get; set; }
         public DbSet<DeliveryNoteItem> DeliveryNoteItems { get; set; }
+        public DbSet<StockAdjustment> StockAdjustments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -299,6 +301,51 @@ namespace ToolNexus.Infrastructure
                     .WithMany()
                     .HasForeignKey(e => e.ToolId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // StockAdjustment entity configuration
+            modelBuilder.Entity<StockAdjustment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.ToolId)
+                    .IsRequired();
+
+                entity.Property(e => e.AdjustmentType)
+                    .IsRequired()
+                    .HasConversion<string>();
+
+                entity.Property(e => e.Quantity)
+                    .IsRequired();
+
+                entity.Property(e => e.PreviousStock)
+                    .IsRequired();
+
+                entity.Property(e => e.NewStock)
+                    .IsRequired();
+
+                entity.Property(e => e.Reason)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Notes)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.AdjustedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.AdjustedAt)
+                    .IsRequired();
+
+                // Relationships
+                entity.HasOne(e => e.Tool)
+                    .WithMany()
+                    .HasForeignKey(e => e.ToolId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Index for faster queries
+                entity.HasIndex(e => e.ToolId);
+                entity.HasIndex(e => e.AdjustedAt);
             });
         }
 

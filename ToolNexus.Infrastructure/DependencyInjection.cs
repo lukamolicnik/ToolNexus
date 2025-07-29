@@ -9,6 +9,7 @@ using ToolNexus.Domain.Tools;
 using ToolNexus.Domain.Users;
 using ToolNexus.Domain.Suppliers;
 using ToolNexus.Domain.DeliveryNotes;
+using ToolNexus.Domain.StockAdjustments;
 using ToolNexus.Infrastructure.Interceptors;
 using ToolNexus.Infrastructure.Repositories;
 
@@ -54,6 +55,7 @@ namespace ToolNexus.Infrastructure
             services.AddScoped<ISupplierRepository, SupplierRepository>();
             services.AddScoped<IDeliveryNoteRepository, DeliveryNoteRepository>();
             services.AddScoped<IDeliveryNoteItemRepository, DeliveryNoteItemRepository>();
+            services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
 
             return services;
         }

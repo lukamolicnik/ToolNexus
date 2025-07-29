@@ -1,0 +1,221 @@
+@page "/stock-adjustments"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@inject IStockAdjustmentService StockAdjustmentService
+@inject IToolService ToolService
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.StockAdjustments
+@using ToolNexus.Application.StockAdjustments.DTOs
+@using ToolNexus.Application.Tools
+@using ToolNexus.Application.Tools.DTOs
+@using ToolNexus.Domain.StockAdjustments
+
+<PageTitle>Zgodovina sprememb zaloge - ToolNexus</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Zgodovina sprememb zaloge</MudText>
+            <MudButton Variant="Variant.Outlined" 
+                      StartIcon="@Icons.Material.Filled.ArrowBack" 
+                      Href="/">
+                Nazaj
+            </MudButton>
+        </MudStack>
+
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Spacing="2">
+                    <MudSelect T="int?" @bind-Value="selectedToolId" Label="Filter po orodju" Variant="Variant.Outlined" Clearable="true">
+                        @if (tools != null)
+                        {
+                            @foreach (var tool in tools)
+                            {
+                                <MudSelectItem Value="@((int?)tool.Id)">@tool.Name (@tool.Code)</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                    
+                    <MudSelect T="StockAdjustmentType?" @bind-Value="selectedType" Label="Tip spremembe" Variant="Variant.Outlined" Clearable="true">
+                        <MudSelectItem Value="@((StockAdjustmentType?)StockAdjustmentType.Increase)">Povečanje</MudSelectItem>
+                        <MudSelectItem Value="@((StockAdjustmentType?)StockAdjustmentType.Decrease)">Zmanjšanje</MudSelectItem>
+                    </MudSelect>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Search"
+                              OnClick="ApplyFilters">
+                        Filtriraj
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined" 
+                              StartIcon="@Icons.Material.Filled.Clear"
+                              OnClick="ClearFilters">
+                        Počisti
+                    </MudButton>
+                </MudStack>
+
+                @if (isLoading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                }
+                else if (filteredAdjustments == null || filteredAdjustments.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Ni zapisov o spremembah zaloge.</MudAlert>
+                }
+                else
+                {
+                    <MudDataGrid Items="@filteredAdjustments" 
+                                Filterable="false" 
+                                SortMode="SortMode.Multiple" 
+                                Hover="true"
+                                Striped="true"
+                                Dense="true">
+                        <Columns>
+                            <PropertyColumn Property="x => x.AdjustedAt" Title="Datum in čas" Format="dd.MM.yyyy HH:mm:ss" />
+                            
+                            <TemplateColumn Title="Orodje">
+                                <CellTemplate>
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.body2">@context.Item.ToolName</MudText>
+                                        <MudText Typo="Typo.caption">@context.Item.ToolCode</MudText>
+                                    </MudStack>
+                                </CellTemplate>
+                            </TemplateColumn>
+                            
+                            <TemplateColumn Title="Tip">
+                                <CellTemplate>
+                                    @if (context.Item.AdjustmentType == StockAdjustmentType.Increase)
+                                    {
+                                        <MudChip Icon="@Icons.Material.Filled.Add" Color="Color.Success" Size="Size.Small">
+                                            Povečanje
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip Icon="@Icons.Material.Filled.Remove" Color="Color.Error" Size="Size.Small">
+                                            Zmanjšanje
+                                        </MudChip>
+                                    }
+                                </CellTemplate>
+                            </TemplateColumn>
+                            
+                            <PropertyColumn Property="x => x.Quantity" Title="Količina" />
+                            
+                            <TemplateColumn Title="Zaloga">
+                                <CellTemplate>
+                                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                        <MudText>@context.Item.PreviousStock</MudText>
+                                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                        <MudText Color="@(context.Item.NewStock < context.Item.PreviousStock ? Color.Error : Color.Success)">
+                                            @context.Item.NewStock
+                                        </MudText>
+                                    </MudStack>
+                                </CellTemplate>
+                            </TemplateColumn>
+                            
+                            <PropertyColumn Property="x => x.Reason" Title="Razlog">
+                                <CellTemplate>
+                                    <MudText>@(context.Item.Reason ?? "-")</MudText>
+                                </CellTemplate>
+                            </PropertyColumn>
+                            
+                            <PropertyColumn Property="x => x.Notes" Title="Opombe">
+                                <CellTemplate>
+                                    @if (!string.IsNullOrEmpty(context.Item.Notes))
+                                    {
+                                        <MudTooltip Text="@context.Item.Notes">
+                                            <MudText Style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                @context.Item.Notes
+                                            </MudText>
+                                        </MudTooltip>
+                                    }
+                                    else
+                                    {
+                                        <MudText>-</MudText>
+                                    }
+                                </CellTemplate>
+                            </PropertyColumn>
+                            
+                            <PropertyColumn Property="x => x.AdjustedBy" Title="Izvedel" />
+                        </Columns>
+                    </MudDataGrid>
+                }
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private List<StockAdjustmentDto>? adjustments;
+    private List<StockAdjustmentDto>? filteredAdjustments;
+    private List<ToolDto>? tools;
+    private bool isLoading = false;
+    private int? selectedToolId;
+    private StockAdjustmentType? selectedType;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Load all adjustments and tools in parallel
+            var adjustmentsTask = StockAdjustmentService.GetAllAsync();
+            var toolsTask = ToolService.GetAllToolsAsync();
+            
+            await Task.WhenAll(adjustmentsTask, toolsTask);
+            
+            adjustments = await adjustmentsTask;
+            tools = await toolsTask;
+            
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju podatkov: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        if (adjustments == null)
+        {
+            filteredAdjustments = new List<StockAdjustmentDto>();
+            return;
+        }
+
+        var query = adjustments.AsEnumerable();
+
+        if (selectedToolId.HasValue)
+        {
+            query = query.Where(a => a.ToolId == selectedToolId.Value);
+        }
+
+        if (selectedType.HasValue)
+        {
+            query = query.Where(a => a.AdjustmentType == selectedType.Value);
+        }
+
+        filteredAdjustments = query.ToList();
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        selectedToolId = null;
+        selectedType = null;
+        filteredAdjustments = adjustments?.ToList() ?? new List<StockAdjustmentDto>();
+        StateHasChanged();
+    }
+}
