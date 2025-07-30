@@ -156,15 +156,26 @@ namespace ToolNexus.Application.Users
 
         public string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            // Uporabi BCrypt z work factor 12 za varno hashiranje
+            return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
         }
 
         public bool VerifyPassword(string password, string hash)
         {
-            var hashedPassword = HashPassword(password);
-            return hashedPassword == hash;
+            try
+            {
+                // BCrypt.Verify upravlja z različnimi formati hashev
+                return BCrypt.Net.BCrypt.Verify(password, hash);
+            }
+            catch
+            {
+                // Če hash ni BCrypt format, poskusi s starim SHA256 načinom
+                // To omogoča postopen prehod na BCrypt
+                using var sha256 = SHA256.Create();
+                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                var sha256Hash = Convert.ToBase64String(hashedBytes);
+                return sha256Hash == hash;
+            }
         }
 
         public async Task<UserRoleDto> GetUserRoleByIdAsync(int roleId)

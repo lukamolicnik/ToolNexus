@@ -96,6 +96,9 @@ app.MapGet("/logout", async (HttpContext context) =>
 using (var scope = app.Services.CreateScope())
 {
     await ToolNexus.Infrastructure.DataSeeder.SeedDataAsync(scope.ServiceProvider);
+    
+    // Posodobi obstoječa gesla na BCrypt format
+    await ToolNexus.Infrastructure.Data.Migrations.UpdatePasswordsToBCrypt.UpdateExistingPasswords(scope.ServiceProvider);
 }
 
 app.Run();

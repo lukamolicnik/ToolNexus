@@ -1,6 +1,7 @@
 ﻿@page "/login"
 @layout ToolNexus.WebUI.Server.Components.Layout.EmptyLayout
 @inject IUserService UserService
+@inject ILoginAttemptService LoginAttemptService
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.Authentication
@@ -53,9 +54,19 @@
     private async Task HandleLoginAsync()
     {
         errorMessage = string.Empty; // Clear previous error message
-        Console.WriteLine($"Login attempt - Username: '{LoginDto.Username}', Password length: {LoginDto.Password?.Length ?? 0}");
+        
         try
         {
+            // Pridobi IP naslov
+            var ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+            
+            // Preveri rate limiting
+            if (await LoginAttemptService.IsRateLimitedAsync(LoginDto.Username, ipAddress))
+            {
+                errorMessage = "Preveč neuspešnih poskusov prijave. Prosimo počakajte 15 minut.";
+                return;
+            }
+            
             var result = await UserService.AuthenticateAsync(LoginDto);
 
             if (result?.Success == true && result.User != null)
@@ -74,13 +85,28 @@
                 {
                     await HttpContext.SignInAsync(principal);
                     
+                    // Zabeleži uspešno prijavo
+                    await LoginAttemptService.RecordLoginAttemptAsync(LoginDto.Username, ipAddress, true);
+                    
                     // Redirect using server-side redirect to avoid SignalR circuit issues
                     HttpContext.Response.Redirect("/");
                 }
             }
             else
             {
-                errorMessage = "Napačno uporabniško ime ali geslo.";
+                // Zabeleži neuspešno prijavo
+                ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+                await LoginAttemptService.RecordLoginAttemptAsync(LoginDto.Username, ipAddress, false);
+                
+                // Preveri če je uporabnik sedaj v rate limit
+                if (await LoginAttemptService.IsRateLimitedAsync(LoginDto.Username, ipAddress))
+                {
+                    errorMessage = "Preveč neuspešnih poskusov prijave. Prosimo počakajte 15 minut.";
+                }
+                else
+                {
+                    errorMessage = $"Napačno uporabniško ime ali geslo.";
+                }
             }
         }
         catch (Exception ex)
