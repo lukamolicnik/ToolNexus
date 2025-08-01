@@ -8,6 +8,7 @@ namespace ToolNexus.Domain.Audit
             int pageSize, 
             string? entityType = null,
             string? entityId = null,
+            string? action = null,
             Guid? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null,

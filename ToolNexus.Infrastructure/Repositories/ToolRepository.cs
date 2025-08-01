@@ -54,6 +54,7 @@ namespace ToolNexus.Infrastructure.Repositories
                 existingTool.CurrentStock = tool.CurrentStock;
                 existingTool.MinimumStock = tool.MinimumStock;
                 existingTool.CriticalStock = tool.CriticalStock;
+                existingTool.ToolCategoryId = tool.ToolCategoryId;
                 existingTool.UpdatedBy = tool.UpdatedBy;
                 existingTool.UpdatedAt = DateTime.UtcNow;
                 

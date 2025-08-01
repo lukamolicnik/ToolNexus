@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using ToolNexus.Application.Audit;
+using ToolNexus.Application.DeliveryNotes;
+using ToolNexus.Application.Reports;
+using ToolNexus.Application.StockAdjustments;
+using ToolNexus.Application.Suppliers;
+using ToolNexus.Application.ToolCategories;
 using ToolNexus.Application.Tools;
 using ToolNexus.Application.Users;
-using ToolNexus.Application.Suppliers;
-using ToolNexus.Application.DeliveryNotes;
-using ToolNexus.Application.ToolCategories;
-using ToolNexus.Application.StockAdjustments;
 
 namespace ToolNexus.Application
 {
@@ -32,6 +33,9 @@ namespace ToolNexus.Application
 
             // Stock Adjustment services
             services.AddScoped<IStockAdjustmentService, StockAdjustmentService>();
+
+            // Report services
+            services.AddScoped<IReportService, ReportService>();
 
             return services;
         }

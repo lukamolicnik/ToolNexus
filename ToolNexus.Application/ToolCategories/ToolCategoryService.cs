@@ -20,16 +20,16 @@ public class ToolCategoryService : IToolCategoryService
         return MapToDto(category);
     }
 
-    public async Task<IEnumerable<ToolCategoryDto>> GetAllAsync()
+    public async Task<List<ToolCategoryDto>> GetAllAsync()
     {
         var categories = await _repository.GetAllAsync();
-        return categories.Select(MapToDto);
+        return categories.Select(MapToDto).ToList();
     }
 
-    public async Task<IEnumerable<ToolCategoryDto>> GetActiveAsync()
+    public async Task<List<ToolCategoryDto>> GetActiveAsync()
     {
         var categories = await _repository.GetActiveAsync();
-        return categories.Select(MapToDto);
+        return categories.Select(MapToDto).ToList();
     }
 
     public async Task<ToolCategoryDto> CreateAsync(CreateToolCategoryDto dto)

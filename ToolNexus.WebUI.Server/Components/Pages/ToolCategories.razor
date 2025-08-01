@@ -175,7 +175,7 @@
         {
             isLoading = true;
             var result = await CategoryService.GetAllAsync();
-            categories = result?.ToList() ?? new List<ToolCategoryDto>();
+            categories = result ?? new List<ToolCategoryDto>();
             ApplyDateFilter();
         }
         catch (Exception ex)

@@ -16,7 +16,7 @@
             <MudAppBar Elevation="1">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
                 <MudSpacer />
-                <MudText Typo="Typo.h5" Class="ml-3">ToolNexus</MudText>
+                <img src="eltras_logo.svg" alt="ELTRAS" style="height: 40px;" />
                 <MudSpacer />
 
                 @* Uporabniške informacije in odjava *@
@@ -76,15 +76,25 @@
     {
         PaletteLight = new PaletteLight()
         {
-            Primary = "#1976d2",
-            PrimaryDarken = "#1565c0",
-            PrimaryLighten = "#42a5f5",
-            Secondary = "#90caf9",
-            AppbarBackground = "#1976d2",
+            Primary = "#424242",
+            PrimaryDarken = "#212121",
+            PrimaryLighten = "#616161",
+            Secondary = "#757575",
+            Tertiary = "#9e9e9e",
+            Info = "#424242",
+            Success = "#4caf50",
+            Warning = "#ff9800",
+            Error = "#f44336",
+            Dark = "#212121",
+            AppbarBackground = "#424242",
             AppbarText = Colors.Shades.White,
             DrawerBackground = "#f5f5f5",
             DrawerText = "rgba(0,0,0, 0.87)",
-            DrawerIcon = "rgba(0,0,0, 0.54)"
+            DrawerIcon = "rgba(0,0,0, 0.54)",
+            Background = "#ffffff",
+            Surface = "#ffffff",
+            TextPrimary = "rgba(0,0,0, 0.87)",
+            TextSecondary = "rgba(0,0,0, 0.54)"
         }
     };
 

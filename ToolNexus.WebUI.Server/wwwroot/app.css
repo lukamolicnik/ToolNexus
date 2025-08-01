@@ -110,61 +110,61 @@ html, body {
     }
 }
 
-/* MudBlazor tema override - modra namesto vijolične */
+/* MudBlazor tema override - temno siva namesto modre */
 .mud-theme-primary {
-    background-color: #1976d2 !important;
+    background-color: #424242 !important;
 }
 
 .mud-primary-text {
-    color: #1976d2 !important;
+    color: #424242 !important;
 }
 
 /* Navigation menu active/selected */
 .mud-nav-link.active {
-    background-color: rgba(25, 118, 210, 0.12) !important;
-    color: #1976d2 !important;
+    background-color: rgba(66, 66, 66, 0.12) !important;
+    color: #424242 !important;
 }
 
 .mud-nav-link.active .mud-nav-link-icon {
-    color: #1976d2 !important;
+    color: #424242 !important;
 }
 
 /* AppBar */
 .mud-appbar {
-    background-color: #1976d2 !important;
+    background-color: #424242 !important;
 }
 
 /* Buttons */
 .mud-button-root.mud-button-filled.mud-button-filled-primary {
-    background-color: #1976d2 !important;
+    background-color: #424242 !important;
 }
 
 .mud-button-root.mud-button-filled.mud-button-filled-primary:hover {
-    background-color: #1565c0 !important;
+    background-color: #212121 !important;
 }
 
 /* Checkbox, Radio, Switch */
 .mud-checkbox .mud-button-root.mud-checked {
-    color: #1976d2 !important;
+    color: #424242 !important;
 }
 
 .mud-radio .mud-button-root.mud-checked {
-    color: #1976d2 !important;
+    color: #424242 !important;
 }
 
 .mud-switch .mud-switch-button.mud-checked {
-    background-color: #1976d2 !important;
+    background-color: #424242 !important;
 }
 
 .mud-switch .mud-switch-track.mud-checked {
-    background-color: rgba(25, 118, 210, 0.5) !important;
+    background-color: rgba(66, 66, 66, 0.5) !important;
 }
 
 /* Progress indicators */
 .mud-progress-circular.mud-primary .mud-svg-circle-circle {
-    stroke: #1976d2 !important;
+    stroke: #424242 !important;
 }
 
 .mud-progress-linear.mud-primary .mud-progress-linear-bar {
-    background-color: #1976d2 !important;
+    background-color: #424242 !important;
 }

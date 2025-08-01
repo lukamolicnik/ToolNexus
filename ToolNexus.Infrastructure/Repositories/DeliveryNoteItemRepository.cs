@@ -26,6 +26,9 @@ namespace ToolNexus.Infrastructure.Repositories
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.DeliveryNoteItems
                 .Include(i => i.Tool)
+                    .ThenInclude(t => t.ToolCategory)
+                .Include(i => i.DeliveryNote)
+                    .ThenInclude(d => d.Supplier)
                 .Where(i => i.DeliveryNoteId == deliveryNoteId)
                 .ToListAsync();
         }
@@ -60,6 +63,61 @@ namespace ToolNexus.Infrastructure.Repositories
                     .ThenInclude(d => d.Supplier)
                 .Where(i => i.ToolId == toolId)
                 .OrderByDescending(i => i.DeliveryNote.DeliveryDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<DeliveryNoteItem>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DeliveryNoteItems
+                .Include(dni => dni.DeliveryNote)
+                    .ThenInclude(dn => dn.Supplier)
+                .Include(dni => dni.Tool)
+                    .ThenInclude(t => t.ToolCategory)
+                .Where(dni => dni.DeliveryNote.DeliveryDate >= startDate &&
+                            dni.DeliveryNote.DeliveryDate <= endDate)
+                .OrderBy(dni => dni.DeliveryNote.DeliveryDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<DeliveryNoteItem>> GetByToolIdWithDeliveryNotesAsync(int toolId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DeliveryNoteItems
+                .Include(dni => dni.DeliveryNote)
+                    .ThenInclude(dn => dn.Supplier)
+                .Where(dni => dni.ToolId == toolId)
+                .OrderByDescending(dni => dni.DeliveryNote.DeliveryDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<DeliveryNoteItem>> GetByCategoryAndDateRangeAsync(int categoryId, DateTime startDate, DateTime endDate)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DeliveryNoteItems
+                .Include(dni => dni.DeliveryNote)
+                    .ThenInclude(dn => dn.Supplier)
+                .Include(dni => dni.Tool)
+                    .ThenInclude(t => t.ToolCategory)
+                .Where(dni => dni.Tool.ToolCategoryId == categoryId &&
+                            dni.DeliveryNote.DeliveryDate >= startDate &&
+                            dni.DeliveryNote.DeliveryDate <= endDate)
+                .OrderBy(dni => dni.DeliveryNote.DeliveryDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<DeliveryNoteItem>> GetBySupplierAndDateRangeAsync(int supplierId, DateTime startDate, DateTime endDate)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DeliveryNoteItems
+                .Include(dni => dni.DeliveryNote)
+                    .ThenInclude(dn => dn.Supplier)
+                .Include(dni => dni.Tool)
+                    .ThenInclude(t => t.ToolCategory)
+                .Where(dni => dni.DeliveryNote.SupplierId == supplierId &&
+                            dni.DeliveryNote.DeliveryDate >= startDate &&
+                            dni.DeliveryNote.DeliveryDate <= endDate)
+                .OrderBy(dni => dni.DeliveryNote.DeliveryDate)
                 .ToListAsync();
         }
     }

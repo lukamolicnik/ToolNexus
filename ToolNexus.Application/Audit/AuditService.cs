@@ -26,6 +26,7 @@ namespace ToolNexus.Application.Audit
                 request.PageSize,
                 request.EntityType,
                 request.EntityId,
+                request.Action,
                 request.UserId,
                 request.StartDate,
                 request.EndDate,

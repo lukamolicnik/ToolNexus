@@ -1,0 +1,279 @@
+﻿@page "/reports/monthly-loss"
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.Reports
+@using ToolNexus.Application.Reports.DTOs
+@using ToolNexus.Application.ToolCategories
+@using ToolNexus.Application.ToolCategories.DTOs
+@using MudBlazor
+@inject IReportService ReportService
+@inject IToolCategoryService CategoryService
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@rendermode InteractiveServer
+
+<PageTitle>Mesečno Poročilo Izgub</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Mesečno Poročilo Izgub</MudText>
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Href="/reports">
+                Nazaj
+            </MudButton>
+        </MudStack>
+
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" sm="3">
+                    <MudSelect @bind-Value="selectedYear" Label="Leto" Required="true">
+                        @for (int year = DateTime.Now.Year; year >= DateTime.Now.Year - 5; year--)
+                        {
+                            var yearValue = year;
+                            <MudSelectItem Value="yearValue">@yearValue</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudSelect @bind-Value="selectedMonth" Label="Mesec" Required="true">
+                        @for (int month = 1; month <= 12; month++)
+                        {
+                            var monthValue = month;
+                            <MudSelectItem Value="monthValue">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthValue)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudSelect @bind-Value="selectedCategoryId" Label="Kategorija" Clearable="true">
+                        @if (categories != null)
+                        {
+                            @foreach (var category in categories)
+                            {
+                                <MudSelectItem Value="@((int?)category.Id)">@category.Name</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="LoadReport"
+                               Disabled="isLoading">
+                        @if (isLoading)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <span>Nalagam...</span>
+                        }
+                        else
+                        {
+                            <span>Prikaži Poročilo</span>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (report != null)
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h5">
+                        Povzetek za @report.MonthName @report.Year
+                    </MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalLostQuantity</MudText>
+                                    <MudText Typo="Typo.body2">Skupaj Izgubljeno</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalDamagedQuantity</MudText>
+                                    <MudText Typo="Typo.body2">Skupaj Poškodovano</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalDiscardedQuantity</MudText>
+                                    <MudText Typo="Typo.body2">Skupaj Odpisano</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Success" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalEstimatedValue.ToString("C2")</MudText>
+                                    <MudText Typo="Typo.body2">Ocenjena Vrednost</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Podrobnosti po Orodjih</MudText>
+
+                    <MudDataGrid T="LossItemDto" Items="report.LossItems" Hover="true" Dense="true">
+                        <Columns>
+                            <PropertyColumn Property="x => x.ToolCode" Title="Koda" />
+                            <PropertyColumn Property="x => x.ToolName" Title="Naziv" />
+                            <PropertyColumn Property="x => x.CategoryName" Title="Kategorija" />
+                            <PropertyColumn Property="x => x.LostQuantity" Title="Izgubljeno" />
+                            <PropertyColumn Property="x => x.DamagedQuantity" Title="Poškodovano" />
+                            <PropertyColumn Property="x => x.DiscardedQuantity" Title="Odpisano" />
+                            <PropertyColumn Property="x => x.TotalQuantity" Title="Skupaj" />
+                            <TemplateColumn Title="Ocenjena Vrednost">
+                                <CellTemplate>
+                                    <MudText>@context.Item.EstimatedValue.ToString("C2")</MudText>
+                                </CellTemplate>
+                            </TemplateColumn>
+                            <TemplateColumn Title="Akcije">
+                                <CellTemplate>
+                                    <MudButton Size="Size.Small"
+                                               Variant="Variant.Text"
+                                               StartIcon="@Icons.Material.Filled.Visibility"
+                                               OnClick="() => ShowIncidents(context.Item)">
+                                        Podrobnosti
+                                    </MudButton>
+                                </CellTemplate>
+                            </TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+
+@if (showIncidentsDialog && selectedItem != null)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <MudPaper Class="pa-6" Style="max-width: 900px; width: 90vw; max-height: 80vh; overflow-y: auto;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h6">Dogodki - @selectedItem.ToolName</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseIncidentsDialog" />
+                </MudStack>
+                
+                @if (selectedItem.Incidents != null && selectedItem.Incidents.Any())
+                {
+                    <MudDataGrid T="LossIncidentDto" Items="selectedItem.Incidents" Dense="true">
+                        <Columns>
+                            <TemplateColumn Title="Datum">
+                                <CellTemplate>
+                                    <MudText>@context.Item.Date.ToString("dd.MM.yyyy HH:mm")</MudText>
+                                </CellTemplate>
+                            </TemplateColumn>
+                            <PropertyColumn Property="x => x.Reason" Title="Razlog" />
+                            <PropertyColumn Property="x => x.Quantity" Title="Količina" />
+                            <PropertyColumn Property="x => x.AdjustedBy" Title="Uporabnik" />
+                            <PropertyColumn Property="x => x.Notes" Title="Opombe" />
+                        </Columns>
+                    </MudDataGrid>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">Ni dogodkov za prikaz.</MudAlert>
+                }
+                
+                <MudStack Row="true" Justify="Justify.FlexEnd">
+                    <MudButton OnClick="CloseIncidentsDialog">Zapri</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private int selectedYear = DateTime.Now.Year;
+    private int selectedMonth = DateTime.Now.Month;
+    private int? selectedCategoryId;
+    private List<ToolCategoryDto>? categories;
+    private MonthlyLossReportDto? report;
+    private bool isLoading = false;
+
+    private bool showIncidentsDialog = false;
+    private LossItemDto? selectedItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            isLoading = true;
+            var result = await CategoryService.GetAllAsync();
+            categories = result ?? new List<ToolCategoryDto>();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju kategorij: {ex.Message}", Severity.Error);
+            categories = new List<ToolCategoryDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadReport()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            var request = new MonthlyLossReportRequestDto
+            {
+                Year = selectedYear,
+                Month = selectedMonth,
+                CategoryId = selectedCategoryId,
+                IncludeDetails = true
+            };
+
+            report = await ReportService.GetMonthlyLossReportAsync(request);
+
+            if (report.LossItems.Count == 0)
+            {
+                Snackbar.Add("V izbranem obdobju ni bilo zabeleženih izgub.", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri generiranju poročila: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowIncidents(LossItemDto item)
+    {
+        selectedItem = item;
+        showIncidentsDialog = true;
+        StateHasChanged();
+    }
+
+    private void CloseIncidentsDialog()
+    {
+        showIncidentsDialog = false;
+        selectedItem = null;
+        StateHasChanged();
+    }
+}

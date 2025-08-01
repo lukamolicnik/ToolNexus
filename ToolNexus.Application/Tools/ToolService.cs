@@ -65,6 +65,7 @@ namespace ToolNexus.Application.Tools
             tool.Description = toolDto.Description;
             tool.MinimumStock = toolDto.MinimumStock;
             tool.CriticalStock = toolDto.CriticalStock;
+            tool.ToolCategoryId = toolDto.ToolCategoryId;
             tool.UpdatedBy = userId;
 
             await _toolRepository.UpdateAsync(tool);

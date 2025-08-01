@@ -6,12 +6,17 @@
     </MudNavLink>
 
         @* Delavec funkcionalnosti *@
-        <AuthorizeView Roles="ADMIN,SUPERVISOR,WORKER">
+        <AuthorizeView Roles="ADMIN,SUPERVISOR,WORKER" Context="workerContext">
 
             <MudNavGroup Title="Orodja" Icon="Icons.Material.Filled.Build" Expanded="false">
                 <MudNavLink Href="/tools" Icon="Icons.Material.Filled.List">
                     Seznam orodij
                 </MudNavLink>
+                <AuthorizeView Roles="ADMIN,SUPERVISOR" Context="categoriesContext">
+                    <MudNavLink Href="/categories" Icon="Icons.Material.Filled.Category">
+                        Kategorije
+                    </MudNavLink>
+                </AuthorizeView>
             </MudNavGroup>
         </AuthorizeView>
 
@@ -19,9 +24,6 @@
         <AuthorizeView Roles="ADMIN,SUPERVISOR">
             <MudDivider Class="my-2" />
             <MudNavGroup Title="Upravljanje" Icon="Icons.Material.Filled.ManageAccounts" Expanded="false">
-                <MudNavLink Href="/categories" Icon="Icons.Material.Filled.Category">
-                    Kategorije
-                </MudNavLink>
                 <MudNavLink Href="/delivery-notes" Icon="Icons.Material.Filled.Receipt">
                     Vnos dobavnic
                 </MudNavLink>
@@ -30,6 +32,16 @@
                 </MudNavLink>
                 <MudNavLink Href="/stock-adjustments" Icon="Icons.Material.Filled.SwapVert">
                     Spremembe zaloge
+                </MudNavLink>
+            </MudNavGroup>
+
+            <MudDivider Class="my-2" />
+            <MudNavGroup Title="Poročila" Icon="Icons.Material.Filled.Assessment" Expanded="false">
+                <MudNavLink Href="/reports/monthly-loss" Icon="Icons.Material.Filled.Report">
+                    Mesečno poročilo izgub
+                </MudNavLink>
+                <MudNavLink Href="/reports/loss-cost-by-category" Icon="Icons.Material.Filled.PieChart">
+                    Stroški izgub po kategorijah
                 </MudNavLink>
             </MudNavGroup>
         </AuthorizeView>
@@ -41,9 +53,6 @@
             <MudNavGroup Title="Administracija" Icon="Icons.Material.Filled.AdminPanelSettings" Expanded="false">
                 <MudNavLink Href="/users" Icon="Icons.Material.Filled.People">
                     Uporabniki
-                </MudNavLink>
-                <MudNavLink Href="/settings" Icon="Icons.Material.Filled.Settings">
-                    Sistemske nastavitve
                 </MudNavLink>
                 <MudNavLink Href="/audit-trail" Icon="Icons.Material.Filled.History">
                     Revizijska sled

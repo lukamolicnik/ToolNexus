@@ -8,5 +8,9 @@ namespace ToolNexus.Domain.DeliveryNotes
         Task UpdateAsync(DeliveryNoteItem item);
         Task DeleteAsync(DeliveryNoteItem item);
         Task<List<DeliveryNoteItem>> GetByToolIdAsync(int toolId);
+        Task<List<DeliveryNoteItem>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
+        Task<List<DeliveryNoteItem>> GetByToolIdWithDeliveryNotesAsync(int toolId);
+        Task<List<DeliveryNoteItem>> GetByCategoryAndDateRangeAsync(int categoryId, DateTime startDate, DateTime endDate);
+        Task<List<DeliveryNoteItem>> GetBySupplierAndDateRangeAsync(int supplierId, DateTime startDate, DateTime endDate);
     }
 }

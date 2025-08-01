@@ -1,0 +1,237 @@
+﻿@page "/reports/loss-cost-by-category"
+@using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.Reports
+@using ToolNexus.Application.Reports.DTOs
+@using MudBlazor
+@inject IReportService ReportService
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "ADMIN,SUPERVISOR")]
+@rendermode InteractiveServer
+
+<PageTitle>Stroški Izgub po Kategorijah</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudStack Spacing="4">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Stroški Izgub po Kategorijah</MudText>
+            <MudButton Variant="Variant.Outlined" 
+                      StartIcon="@Icons.Material.Filled.ArrowBack" 
+                      Href="/reports">
+                Nazaj
+            </MudButton>
+        </MudStack>
+
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="startDate" 
+                                  Label="Od datuma" 
+                                  Required="true"
+                                  MaxDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="endDate" 
+                                  Label="Do datuma" 
+                                  Required="true"
+                                  MaxDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="minimumLossValue" 
+                                    Label="Minimalna vrednost izgube (€)" 
+                                    Min="0"
+                                    Step="100" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Search"
+                              OnClick="LoadReport"
+                              Disabled="isLoading"
+                              FullWidth="false">
+                        @if (isLoading)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <span>Nalagam...</span>
+                        }
+                        else
+                        {
+                            <span>Prikaži Poročilo</span>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (report != null)
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h5">
+                        Povzetek od @report.StartDate.ToString("dd.MM.yyyy") do @report.EndDate.ToString("dd.MM.yyyy")
+                    </MudText>
+                    
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalEstimatedValue.ToString("C2")</MudText>
+                                    <MudText Typo="Typo.body2">Skupna Vrednost Izgub</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalQuantityLost</MudText>
+                                    <MudText Typo="Typo.body2">Skupna Količina</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalCategories</MudText>
+                                    <MudText Typo="Typo.body2">Prizadetih Kategorij</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudAlert Severity="Severity.Success" Variant="Variant.Filled">
+                                <MudStack>
+                                    <MudText Typo="Typo.h6">@report.Summary.TotalToolsAffected</MudText>
+                                    <MudText Typo="Typo.body2">Prizadetih Orodij</MudText>
+                                </MudStack>
+                            </MudAlert>
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (report.Summary.MostAffectedCategory != null)
+                    {
+                        <MudAlert Severity="Severity.Warning">
+                            <MudText>
+                                <strong>Najbolj prizadeta kategorija:</strong> @report.Summary.MostAffectedCategory.CategoryName 
+                                (@report.Summary.MostAffectedCategory.EstimatedValue.ToString("C2"))
+                            </MudText>
+                        </MudAlert>
+                    }
+                </MudStack>
+            </MudPaper>
+
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Stroški po Kategorijah</MudText>
+                    
+                    @foreach (var category in report.Categories)
+                    {
+                        <MudExpansionPanels Elevation="2" Rounded="true">
+                            <MudExpansionPanel>
+                                <TitleContent>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-2">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                            <MudText Typo="Typo.subtitle1">
+                                                <strong>@category.CategoryName</strong>
+                                            </MudText>
+                                            <MudChip T="string" Color="Color.Error" Size="Size.Small">
+                                                @category.EstimatedValue.ToString("C2")
+                                            </MudChip>
+                                            <MudChip T="string" Color="Color.Warning" Size="Size.Small">
+                                                @category.TotalQuantity kom
+                                            </MudChip>
+                                            <MudChip T="string" Color="Color.Info" Size="Size.Small">
+                                                @category.PercentageOfTotalLoss.ToString("F1")%
+                                            </MudChip>
+                                        </MudStack>
+                                        <MudProgressLinear Value="(double)category.PercentageOfTotalLoss" 
+                                                          Color="Color.Error" 
+                                                          Size="Size.Medium" 
+                                                          Class="flex-grow-1 mx-4"
+                                                          Style="max-width: 200px;" />
+                                    </MudStack>
+                                </TitleContent>
+                                <ChildContent>
+                                    @if (category.Tools.Any())
+                                    {
+                                        <MudDataGrid T="CategoryToolLossDto" Items="category.Tools" Dense="true" Hover="true">
+                                            <Columns>
+                                                <PropertyColumn Property="x => x.ToolCode" Title="Koda" />
+                                                <PropertyColumn Property="x => x.ToolName" Title="Naziv" />
+                                                <PropertyColumn Property="x => x.LostQuantity" Title="Izgubljeno" />
+                                                <PropertyColumn Property="x => x.DamagedQuantity" Title="Poškodovano" />
+                                                <PropertyColumn Property="x => x.DiscardedQuantity" Title="Odpisano" />
+                                                <PropertyColumn Property="x => x.TotalQuantity" Title="Skupaj" />
+                                                <TemplateColumn Title="Ocenjena Vrednost">
+                                                    <CellTemplate>
+                                                        <MudText>@context.Item.EstimatedValue.ToString("C2")</MudText>
+                                                    </CellTemplate>
+                                                </TemplateColumn>
+                                            </Columns>
+                                        </MudDataGrid>
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">
+                                            V tej kategoriji ni bilo izgub v izbranem obdobju.
+                                        </MudAlert>
+                                    }
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                    }
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private DateTime? startDate = DateTime.Today.AddMonths(-1);
+    private DateTime? endDate = DateTime.Today;
+    private int? minimumLossValue = null;
+    private LossCostByCategoryReportDto? report;
+    private bool isLoading = false;
+
+    private async Task LoadReport()
+    {
+        if (startDate == null || endDate == null)
+        {
+            Snackbar.Add("Prosimo, izberite veljavno časovno obdobje.", Severity.Warning);
+            return;
+        }
+
+        if (startDate > endDate)
+        {
+            Snackbar.Add("Začetni datum ne sme biti večji od končnega datuma.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            var request = new LossCostByCategoryReportRequestDto
+            {
+                StartDate = startDate.Value,
+                EndDate = endDate.Value.Date.AddDays(1).AddSeconds(-1), // Do konca dneva
+                IncludeToolDetails = true, // Vedno prikaži podrobnosti
+                MinimumLossValue = minimumLossValue
+            };
+
+            report = await ReportService.GetLossCostByCategoryReportAsync(request);
+            
+            if (report.Categories.Count == 0)
+            {
+                Snackbar.Add("V izbranem obdobju ni bilo zabeleženih izgub.", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri generiranju poročila: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

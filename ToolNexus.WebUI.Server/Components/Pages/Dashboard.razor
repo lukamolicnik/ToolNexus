@@ -2,9 +2,16 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authorization
+@using ToolNexus.Application.Tools
+@using ToolNexus.Application.Suppliers
+@using ToolNexus.Application.DeliveryNotes
 @inject NavigationManager NavigationManager
 @inject IUserService UserService
+@inject IToolService ToolService
+@inject ISupplierService SupplierService
+@inject IDeliveryNoteService DeliveryNoteService
 @attribute [Authorize(Roles = "ADMIN,SUPERVISOR,WORKER")]
+@rendermode InteractiveServer
 
 <PageTitle>Nadzorna plošča - ToolNexus</PageTitle>
 
@@ -41,7 +48,7 @@
                     <MudPaper Elevation="2" Class="pa-4">
                         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                             <div>
-                                <MudText Typo="Typo.h4" Color="Color.Primary">-</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Primary">@totalTools</MudText>
                                 <MudText Typo="Typo.body2">Skupaj orodij</MudText>
                             </div>
                             <MudIcon Icon="Icons.Material.Filled.Build" Color="Color.Primary" Size="Size.Large" />
@@ -53,7 +60,7 @@
                     <MudPaper Elevation="2" Class="pa-4">
                         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                             <div>
-                                <MudText Typo="Typo.h4" Color="Color.Success">-</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Success">@availableTools</MudText>
                                 <MudText Typo="Typo.body2">Razpoložljivih</MudText>
                             </div>
                             <MudIcon Icon="Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
@@ -65,8 +72,8 @@
                     <MudPaper Elevation="2" Class="pa-4">
                         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                             <div>
-                                <MudText Typo="Typo.h4" Color="Color.Warning">-</MudText>
-                                <MudText Typo="Typo.body2">Izposojenih</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Warning">@belowMinimumTools</MudText>
+                                <MudText Typo="Typo.body2">Pod minimalno zalogo</MudText>
                             </div>
                             <MudIcon Icon="Icons.Material.Filled.SwapHoriz" Color="Color.Warning" Size="Size.Large" />
                         </MudStack>
@@ -77,10 +84,10 @@
                     <MudPaper Elevation="2" Class="pa-4">
                         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                             <div>
-                                <MudText Typo="Typo.h4" Color="Color.Info">-</MudText>
-                                <MudText Typo="Typo.body2">Rezervacij</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Info">@totalSuppliers</MudText>
+                                <MudText Typo="Typo.body2">Dobaviteljev</MudText>
                             </div>
-                            <MudIcon Icon="Icons.Material.Filled.BookmarkBorder" Color="Color.Info" Size="Size.Large" />
+                            <MudIcon Icon="Icons.Material.Filled.Business" Color="Color.Info" Size="Size.Large" />
                         </MudStack>
                     </MudPaper>
                 </MudItem>
@@ -116,7 +123,7 @@
                         <MudCard Elevation="3" Style="height: 100%;">
                             <MudCardContent>
                                 <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="Icons.Material.Filled.Category" Color="Color.Success" Size="Size.Large" />
+                                    <MudIcon Icon="Icons.Material.Filled.Category" Color="Color.Primary" Size="Size.Large" />
                                     <MudText Typo="Typo.h6" Align="Align.Center">Kategorije</MudText>
                                     <MudText Typo="Typo.body2" Align="Align.Center">
                                         Upravljaj s kategorijami orodij in njihovo organizacijo.
@@ -124,13 +131,52 @@
                                 </MudStack>
                             </MudCardContent>
                             <MudCardActions Class="justify-center">
-                                <MudButton Variant="Variant.Filled" Color="Color.Success" Href="/categories">
-                                    Upravljaj
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/categories">
+                                    Odpri
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Business" Color="Color.Primary" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Dobavitelji</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Upravljaj z dobavitelji in njihovimi kontaktnimi podatki.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/suppliers">
+                                    Odpri
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Elevation="3" Style="height: 100%;">
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="Icons.Material.Filled.Receipt" Color="Color.Primary" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Dobavnice</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center">
+                                        Vnos in pregled dobavnic za povečanje zaloge.
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/delivery-notes">
+                                    Odpri
                                 </MudButton>
                             </MudCardActions>
                         </MudCard>
                     </MudItem>
                 </AuthorizeView>
+
 
                 @* Administrator funkcionalnosti *@
                 <AuthorizeView Roles="ADMIN" Context="adminContext">
@@ -147,26 +193,7 @@
                             </MudCardContent>
                             <MudCardActions Class="justify-center">
                                 <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/users">
-                                    Upravljaj
-                                </MudButton>
-                            </MudCardActions>
-                        </MudCard>
-                    </MudItem>
-
-                    <MudItem xs="12" sm="6" md="4">
-                        <MudCard Elevation="3" Style="height: 100%; border: 2px solid var(--mud-palette-error);">
-                            <MudCardContent>
-                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                                    <MudIcon Icon="Icons.Material.Filled.Settings" Color="Color.Error" Size="Size.Large" />
-                                    <MudText Typo="Typo.h6" Align="Align.Center">Nastavitve</MudText>
-                                    <MudText Typo="Typo.body2" Align="Align.Center">
-                                        Konfiguracija sistema in nastavitev.
-                                    </MudText>
-                                </MudStack>
-                            </MudCardContent>
-                            <MudCardActions Class="justify-center">
-                                <MudButton Variant="Variant.Filled" Color="Color.Error" Href="/settings">
-                                    Nastavitve
+                                    Odpri
                                 </MudButton>
                             </MudCardActions>
                         </MudCard>
@@ -192,6 +219,10 @@
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private UserDto user;
+    private int totalTools = 0;
+    private int availableTools = 0;
+    private int belowMinimumTools = 0;
+    private int totalSuppliers = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -204,8 +235,34 @@
                 .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
                 .FirstOrDefault());
 
+            // Fetch user data
             user = await UserService.GetUserByIdAsync(userId);
+            
+            // Fetch statistics
+            await LoadStatistics();
+            
             StateHasChanged(); // Sprožimo re-render
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            // Fetch all tools
+            var tools = await ToolService.GetAllToolsAsync();
+            totalTools = tools.Count;
+            availableTools = tools.Count(t => t.CurrentStock > 0);
+            belowMinimumTools = tools.Count(t => t.CurrentStock > 0 && t.CurrentStock <= t.MinimumStock);
+
+            // Fetch all suppliers
+            var suppliers = await SupplierService.GetAllSuppliersAsync();
+            totalSuppliers = suppliers.Count;
+        }
+        catch (Exception ex)
+        {
+            // In case of error, statistics will remain 0
+            Console.WriteLine($"Error loading statistics: {ex.Message}");
         }
     }
 

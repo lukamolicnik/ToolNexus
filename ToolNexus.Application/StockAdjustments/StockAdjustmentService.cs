@@ -36,6 +36,25 @@ public class StockAdjustmentService : IStockAdjustmentService
         return adjustments.Select(MapToDto).ToList();
     }
 
+    public async Task<PagedStockAdjustmentDto> GetPagedAsync(StockAdjustmentPageRequest request)
+    {
+        var (items, totalCount) = await _stockAdjustmentRepository.GetPagedAsync(
+            request.Page,
+            request.PageSize,
+            request.ToolId,
+            request.AdjustmentType,
+            request.SearchTerm
+        );
+
+        return new PagedStockAdjustmentDto
+        {
+            Items = items.Select(MapToDto),
+            TotalItems = totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize
+        };
+    }
+
     private static StockAdjustmentDto MapToDto(StockAdjustment adjustment)
     {
         return new StockAdjustmentDto

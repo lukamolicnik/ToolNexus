@@ -1,8 +1,8 @@
-namespace ToolNexus.Application.Audit.DTOs;
+namespace ToolNexus.Application.StockAdjustments.DTOs;
 
-public class PagedAuditTrailDto
+public class PagedStockAdjustmentDto
 {
-    public IEnumerable<AuditTrailDto> Items { get; set; } = new List<AuditTrailDto>();
+    public IEnumerable<StockAdjustmentDto> Items { get; set; } = new List<StockAdjustmentDto>();
     public int TotalItems { get; set; }
     public int Page { get; set; }
     public int PageSize { get; set; }
@@ -11,14 +11,12 @@ public class PagedAuditTrailDto
     public bool HasNextPage => Page < TotalPages;
 }
 
-public class AuditTrailPageRequest
+public class StockAdjustmentPageRequest
 {
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
-    public string? EntityType { get; set; }
-    public string? EntityId { get; set; }
-    public string? Action { get; set; }
-    public Guid? UserId { get; set; }
+    public int? ToolId { get; set; }
+    public Domain.StockAdjustments.StockAdjustmentType? AdjustmentType { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? SearchTerm { get; set; }

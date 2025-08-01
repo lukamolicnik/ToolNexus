@@ -25,6 +25,7 @@ namespace ToolNexus.Infrastructure.Repositories
             int pageSize, 
             string? entityType = null,
             string? entityId = null,
+            string? action = null,
             Guid? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
@@ -40,6 +41,12 @@ namespace ToolNexus.Infrastructure.Repositories
 
             if (!string.IsNullOrEmpty(entityId))
                 query = query.Where(a => a.EntityId == entityId);
+                
+            if (!string.IsNullOrEmpty(action))
+            {
+                if (Enum.TryParse<AuditAction>(action, out var actionEnum))
+                    query = query.Where(a => a.Action == actionEnum);
+            }
 
             if (userId.HasValue)
                 query = query.Where(a => a.UserId == userId.Value);

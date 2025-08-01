@@ -157,6 +157,21 @@
                                                  Label="Kritična zaloga"
                                                  Variant="Variant.Outlined"
                                                  Min="0" />
+
+                                <MudSelect @bind-Value="updateModel.ToolCategoryId"
+                                           Label="Kategorija"
+                                           Variant="Variant.Outlined"
+                                           Placeholder="Izberite kategorijo..."
+                                           AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem Value="@((int?)null)">Brez kategorije</MudSelectItem>
+                                    @if (categories != null)
+                                    {
+                                        @foreach (var category in categories)
+                                        {
+                                            <MudSelectItem Value="@((int?)category.Id)">@category.Name</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
                             }
 
 
@@ -214,9 +229,13 @@
                         Name = Tool.Name,
                         Description = Tool.Description,
                         MinimumStock = Tool.MinimumStock,
-                        CriticalStock = Tool.CriticalStock
+                        CriticalStock = Tool.CriticalStock,
+                        ToolCategoryId = Tool.ToolCategoryId
                     };
                     editContext = new EditContext(updateModel);
+                    
+                    // Load categories for editing
+                    await LoadCategories();
                 }
                 else
                 {
@@ -235,7 +254,7 @@
         try
         {
             var result = await CategoryService.GetActiveAsync();
-            categories = result?.ToList() ?? new List<ToolCategoryDto>();
+            categories = result ?? new List<ToolCategoryDto>();
         }
         catch (Exception ex)
         {

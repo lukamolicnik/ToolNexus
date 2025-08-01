@@ -8,6 +8,7 @@
 @inject ISnackbar Snackbar
 @attribute [Authorize(Roles = "ADMIN")]
 @rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Revizijska Sled</PageTitle>
 
@@ -35,6 +36,7 @@
                         <MudSelectItem Value='"Supplier"'>Dobavitelji</MudSelectItem>
                         <MudSelectItem Value='"DeliveryNote"'>Dobavnice</MudSelectItem>
                         <MudSelectItem Value='"DeliveryNoteItem"'>Postavke dobavnic</MudSelectItem>
+                        <MudSelectItem Value='"StockAdjustment"'>Prilagoditve zalog</MudSelectItem>
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="3">
@@ -50,10 +52,12 @@
                 <MudItem xs="12" sm="3">
                     <MudTextField @bind-Value="searchTerm" 
                                   Label="Iskanje" 
-                                  Placeholder="Uporabnik, tip entitete..."
+                                  Placeholder="Uporabnik, tabela, spremembe..."
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
-                                  OnKeyUp="OnSearchKeyUp"
+                                  Immediate="true"
+                                  DebounceInterval="500"
+                                  OnDebounceIntervalElapsed="@(async () => await OnFilterChanged())"
                                   Clearable="true" />
                 </MudItem>
                 <MudItem xs="12" sm="3">
@@ -90,7 +94,6 @@
                 <MudTh>Tip</MudTh>
                 <MudTh>Akcija</MudTh>
                 <MudTh>Uporabnik</MudTh>
-                <MudTh>Entiteta</MudTh>
                 <MudTh>Akcije</MudTh>
             </HeaderContent>
             <RowTemplate>
@@ -107,9 +110,6 @@
                 </MudTd>
                 <MudTd DataLabel="Uporabnik">
                     <MudText Typo="Typo.body2">@context.UserName</MudText>
-                </MudTd>
-                <MudTd DataLabel="Entiteta">
-                    <MudText Typo="Typo.body2">@context.TableName</MudText>
                 </MudTd>
                 <MudTd DataLabel="Akcije">
                     <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
@@ -145,7 +145,6 @@
     private string searchTerm = "";
     private bool showDetailsDialog = false;
     private AuditTrailDto? selectedAudit;
-    private Timer? searchTimer;
 
     private async Task<TableData<AuditTrailDto>> LoadServerData(TableState state, CancellationToken cancellationToken)
     {
@@ -158,6 +157,7 @@
                 Page = state.Page + 1, // MudTable uses 0-based pages
                 PageSize = state.PageSize,
                 EntityType = string.IsNullOrEmpty(selectedEntityType) ? null : selectedEntityType,
+                Action = string.IsNullOrEmpty(selectedAction) ? null : selectedAction,
                 SearchTerm = string.IsNullOrEmpty(searchTerm) ? null : searchTerm
             };
 
@@ -185,18 +185,6 @@
         await table.ReloadServerData();
     }
 
-    private void OnSearchKeyUp(KeyboardEventArgs e)
-    {
-        searchTimer?.Dispose();
-        searchTimer = new Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                await table.ReloadServerData();
-                StateHasChanged();
-            });
-        }, null, 500, Timeout.Infinite);
-    }
 
     private async Task ResetFilters()
     {
@@ -220,6 +208,7 @@
         "Supplier" => "Dobavitelj",
         "DeliveryNote" => "Dobavnica",
         "DeliveryNoteItem" => "Postavka dobavnice",
+        "StockAdjustment" => "Prilagoditev zaloge",
         _ => entityType
     };
 
@@ -241,6 +230,5 @@
 
     public void Dispose()
     {
-        searchTimer?.Dispose();
     }
 }
