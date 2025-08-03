@@ -40,7 +40,7 @@
                 </MudStack>
             </MudPaper>
         }
-        else if (filteredCategories.Count == 0)
+        else if (categories == null || categories.Count == 0)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
                 <MudStack Spacing="2" AlignItems="AlignItems.Center">

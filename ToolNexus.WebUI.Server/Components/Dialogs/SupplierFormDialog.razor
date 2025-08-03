@@ -22,11 +22,28 @@
                         <MudTextField Value="@Supplier?.Email" Label="Email" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@Supplier?.Phone" Label="Telefon" Variant="Variant.Outlined" ReadOnly="true" />
                         <MudTextField Value="@Supplier?.Address" Label="Naslov" Variant="Variant.Outlined" Lines="3" ReadOnly="true" />
-                        <MudChip T="string" Color="@(Supplier?.IsActive == true ? Color.Success : Color.Error)">
-                            @(Supplier?.IsActive == true ? "Aktiven" : "Neaktiven")
-                        </MudChip>
-                        <MudTextField Value="@Supplier?.CreatedBy" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
-                        <MudTextField Value="@Supplier?.CreatedAt.ToString("dd.MM.yyyy HH:mm")" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                        <MudStack Row="true">
+                            <MudChip T="string" Color="@(Supplier?.IsActive == true ? Color.Success : Color.Error)">
+                                @(Supplier?.IsActive == true ? "Aktiven" : "Neaktiven")
+                            </MudChip>
+                        </MudStack>
+                        <MudGrid>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Supplier?.CreatedBy" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField Value="@Supplier?.CreatedAt.ToString("dd.MM.yyyy HH:mm")" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                            </MudItem>
+                            @if (!string.IsNullOrEmpty(Supplier?.UpdatedBy))
+                            {
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField Value="@Supplier?.UpdatedBy" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField Value="@Supplier?.UpdatedAt?.ToString("dd.MM.yyyy HH:mm")" Label="Posodobljeno" Variant="Variant.Outlined" ReadOnly="true" />
+                                </MudItem>
+                            }
+                        </MudGrid>
                         
                         <MudStack Row="true" Justify="Justify.FlexEnd">
                             <MudButton OnClick="HandleCancel">Zapri</MudButton>

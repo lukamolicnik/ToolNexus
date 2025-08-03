@@ -6,11 +6,10 @@
 @if (IsVisible)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+        <MudPaper Class="pa-6" Style="max-width: 500px; width: 90vw; max-height: 90vh; overflow-y: auto;">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudText Typo="Typo.h5">
-                        <MudIcon Icon="@Icons.Material.Filled.Category" Class="pb-1" />
                         @(IsViewOnly ? "Podrobnosti kategorije" : (IsEdit ? "Uredi kategorijo" : "Nova kategorija"))
                     </MudText>
                     <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
@@ -40,10 +39,9 @@
                                               ReadOnly="true" />
                             </MudItem>
                             <MudItem xs="12">
-                                <MudSwitch Value="@Category?.IsActive" 
-                                           Label="Aktivna" 
-                                           Color="Color.Primary"
-                                           ReadOnly="true" />
+                                <MudChip T="string" Color="@(Category?.IsActive == true ? Color.Success : Color.Error)">
+                                    @(Category?.IsActive == true ? "Aktivna" : "Neaktivna")
+                                </MudChip>
                             </MudItem>
                             <MudItem xs="12" sm="6">
                                 <MudTextField Value="@Category?.CreatedBy" 

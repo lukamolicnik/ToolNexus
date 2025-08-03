@@ -2,12 +2,15 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "ADMIN,SUPERVISOR,WORKER")]
 @inject IToolService ToolService
+@inject IToolCategoryService ToolCategoryService
 @inject ISnackbar Snackbar
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 @using ToolNexus.WebUI.Server.Components.Dialogs
 @using ToolNexus.WebUI.Server.Components.Shared
 @using ToolNexus.Application.Tools.DTOs
+@using ToolNexus.Application.ToolCategories
+@using ToolNexus.Application.ToolCategories.DTOs
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
 
@@ -41,7 +44,7 @@
                 </MudStack>
             </MudPaper>
         }
-        else if (filteredTools.Count == 0)
+        else if (tools == null || tools.Count == 0)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
                 <MudStack Spacing="2" AlignItems="AlignItems.Center">
@@ -68,14 +71,27 @@
                     <PropertyColumn T="ToolDto" TProperty="int" Property="x => x.Id" Title="ID" Sortable="true" Filterable="false" />
                     <PropertyColumn T="ToolDto" TProperty="string" Property="x => x.Code" Title="Koda" Sortable="true" Filterable="true" />
                     <PropertyColumn T="ToolDto" TProperty="string" Property="x => x.Name" Title="Naziv" />
+                    <TemplateColumn T="ToolDto" Title="Kategorija" Filterable="true">
+                        <FilterTemplate>
+                            <MudSelect T="string" @bind-Value="categoryFilter" @bind-Value:after="OnCategoryFilterChanged" 
+                                      Clearable="true" Dense="true" Margin="Margin.Dense">
+                                <MudSelectItem T="string" Value="@string.Empty">Vse kategorije</MudSelectItem>
+                                @if (categories != null)
+                                {
+                                    @foreach (var category in categories)
+                                    {
+                                        <MudSelectItem T="string" Value="@category.Name">@category.Name</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </FilterTemplate>
+                        <CellTemplate Context="toolContext">
+                            <MudText>@(toolContext.Item.ToolCategoryName ?? "-")</MudText>
+                        </CellTemplate>
+                    </TemplateColumn>
                     <TemplateColumn T="ToolDto" Title="Opis">
                         <CellTemplate Context="toolContext">
                             <MudText>@(toolContext.Item.Description ?? "-")</MudText>
-                        </CellTemplate>
-                    </TemplateColumn>
-                    <TemplateColumn T="ToolDto" Title="Kategorija">
-                        <CellTemplate Context="toolContext">
-                            <MudText>@(toolContext.Item.ToolCategoryName ?? "-")</MudText>
                         </CellTemplate>
                     </TemplateColumn>
                     <TemplateColumn T="ToolDto" Title="Zaloga" Sortable="true" SortBy="x => x.CurrentStock">
@@ -168,6 +184,8 @@
     private ToolDto? toolToDelete;
     private DateTime? dateFilter;
     private bool showStockDialog = false;
+    private string categoryFilter = string.Empty;
+    private List<ToolCategoryDto>? categories;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
@@ -189,6 +207,7 @@
                 canEdit = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
                 canDelete = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
                 
+                await LoadCategories();
                 await LoadTools();
             }
         }
@@ -205,7 +224,7 @@
             isLoading = true;
             var result = await ToolService.GetAllToolsAsync();
             tools = result ?? new List<ToolDto>();
-            ApplyDateFilter();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -230,7 +249,20 @@
                (!string.IsNullOrEmpty(tool.ToolCategoryName) && tool.ToolCategoryName.Contains(searchString, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void ApplyDateFilter()
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await ToolCategoryService.GetActiveAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju kategorij: {ex.Message}", Severity.Error);
+            categories = new List<ToolCategoryDto>();
+        }
+    }
+
+    private void ApplyFilters()
     {
         if (tools == null)
         {
@@ -238,14 +270,24 @@
             return;
         }
 
+        var result = tools.AsEnumerable();
+
         if (dateFilter.HasValue)
         {
-            filteredTools = tools.Where(t => t.CreatedAt.Date == dateFilter.Value.Date).ToList();
+            result = result.Where(t => t.CreatedAt.Date == dateFilter.Value.Date);
         }
-        else
+
+        if (!string.IsNullOrEmpty(categoryFilter))
         {
-            filteredTools = tools.ToList();
+            result = result.Where(t => t.ToolCategoryName == categoryFilter);
         }
+
+        filteredTools = result.ToList();
+    }
+
+    private void ApplyDateFilter()
+    {
+        ApplyFilters();
     }
 
     private Task CreateTool()
@@ -337,7 +379,13 @@
 
     private void OnDateFilterChanged()
     {
-        ApplyDateFilter();
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void OnCategoryFilterChanged()
+    {
+        ApplyFilters();
         StateHasChanged();
     }
 }

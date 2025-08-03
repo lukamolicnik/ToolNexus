@@ -97,7 +97,9 @@ namespace ToolNexus.Application.Suppliers
                 Address = supplier.Address,
                 IsActive = supplier.IsActive,
                 CreatedAt = supplier.CreatedAt,
-                CreatedBy = supplier.CreatedBy
+                CreatedBy = supplier.CreatedBy,
+                UpdatedAt = supplier.UpdatedAt,
+                UpdatedBy = supplier.UpdatedBy
             };
         }
     }

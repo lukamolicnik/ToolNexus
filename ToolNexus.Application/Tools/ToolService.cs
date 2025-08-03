@@ -166,7 +166,9 @@ namespace ToolNexus.Application.Tools
                 IsBelowMinimum = tool.IsBelowMinimum,
                 IsCritical = tool.IsCritical,
                 CreatedAt = tool.CreatedAt,
-                CreatedBy = tool.CreatedBy
+                CreatedBy = tool.CreatedBy,
+                UpdatedAt = tool.UpdatedAt,
+                UpdatedBy = tool.UpdatedBy
             };
         }
     }

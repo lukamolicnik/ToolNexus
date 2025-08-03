@@ -64,19 +64,8 @@
                            SearchFunc="@((supplier, search) => SupplierSearchFunc(supplier, search))">
                 <ColumnsTemplate>
                     <PropertyColumn T="SupplierDto" TProperty="int" Property="x => x.Id" Title="ID" Sortable="true" />
-                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Name" Title="Naziv" Sortable="true" />
-                    <TemplateColumn T="SupplierDto" Title="Email">
-                        <CellTemplate Context="supplierContext">
-                            @if (!string.IsNullOrEmpty(supplierContext.Item.Email))
-                            {
-                                <MudLink Href="@($"mailto:{supplierContext.Item.Email}")">@supplierContext.Item.Email</MudLink>
-                            }
-                            else
-                            {
-                                <MudText>-</MudText>
-                            }
-                        </CellTemplate>
-                    </TemplateColumn>
+                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Name" Title="Naziv" Sortable="true" Filterable="true" />
+                    <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Email ?? string.Empty" Title="Email" Filterable="true" />
                     <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Phone ?? string.Empty" Title="Telefon" />
                     <PropertyColumn T="SupplierDto" TProperty="string" Property="x => x.Address ?? string.Empty" Title="Naslov" />
                     <TemplateColumn T="SupplierDto" Title="Status">

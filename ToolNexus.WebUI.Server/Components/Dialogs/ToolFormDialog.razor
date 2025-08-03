@@ -36,8 +36,23 @@
                                     }
                                     <MudTextField Value="@(Tool?.CurrentStock)" Label="Trenutna zaloga" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@($"{Tool?.MinimumStock} / {Tool?.CriticalStock}")" Label="Min/Krit zaloga" Variant="Variant.Outlined" ReadOnly="true" />
-                                    <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
-                                    <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudGrid>
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
+                                        </MudItem>
+                                        @if (!string.IsNullOrEmpty(Tool?.UpdatedBy))
+                                        {
+                                            <MudItem xs="12" sm="6">
+                                                <MudTextField Value="@(Tool?.UpdatedBy)" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6">
+                                                <MudTextField Value="@(Tool?.UpdatedAt?.ToString("dd.MM.yyyy HH:mm"))" Label="Posodobljeno" Variant="Variant.Outlined" ReadOnly="true" />
+                                            </MudItem>
+                                        }
+                                    </MudGrid>
                                 </MudStack>
                             </MudItem>
                             <MudItem xs="12" sm="4">
