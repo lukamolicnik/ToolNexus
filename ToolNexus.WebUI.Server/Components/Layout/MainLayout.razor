@@ -15,40 +15,67 @@
         <MudLayout>
             <MudAppBar Elevation="1">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-                <MudSpacer />
-                <img src="eltras_logo.svg" alt="ELTRAS" style="height: 40px;" />
-                <MudSpacer />
+                
+                <MudHidden Breakpoint="Breakpoint.Sm">
+                    <MudSpacer />
+                    <img src="eltras_logo.svg" alt="ELTRAS" style="height: 40px;" />
+                    <MudSpacer />
+                </MudHidden>
+                
+                <MudHidden Breakpoint="Breakpoint.Sm" Invert="true">
+                    <MudSpacer />
+                </MudHidden>
 
                 @* Uporabniške informacije in odjava *@
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
                     @if (user != null)
                     {
-                        <MudText Typo="Typo.body2">@user.FullName</MudText>
+                        <MudHidden Breakpoint="Breakpoint.Xs">
+                            <MudText Typo="Typo.body2" Class="mr-1">@user.FullName</MudText>
+                        </MudHidden>
+                        
+                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                            <MudText Typo="Typo.body2" Class="mr-1">@GetShortName()</MudText>
+                        </MudHidden>
+                        
                         <MudChip Size="Size.Small"
-                        Color="@GetRoleColor()"
-                        T="string">
-                            @user.UserRole?.Name
+                                 Color="@GetRoleColor()"
+                                 T="string"
+                                 Class="pa-1">
+                            <MudHidden Breakpoint="Breakpoint.Xs">
+                                @user.UserRole?.Name
+                            </MudHidden>
+                            <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                                @GetRoleAbbreviation()
+                            </MudHidden>
                         </MudChip>
+                        
                         <MudTooltip Text="Odjavi se">
                             <a href="/logout" style="color: inherit; text-decoration: none;">
-                                <MudIcon Icon="@Icons.Material.Filled.Logout" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" />
                             </a>
                         </MudTooltip>
                     }
                     else
                     {
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <MudText Typo="Typo.body2">Nalagam...</MudText>
+                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                            <MudText Typo="Typo.body2">Nalagam...</MudText>
+                        </MudHidden>
                     }
                 </MudStack>
             </MudAppBar>
 
-            <MudDrawer @bind-Open="drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+            <MudDrawer @bind-Open="drawerOpen" 
+                       Elevation="1" 
+                       ClipMode="DrawerClipMode.Always"
+                       Variant="DrawerVariant.Responsive"
+                       Breakpoint="Breakpoint.Md">
                 <NavMenu />
             </MudDrawer>
 
             <MudMainContent>
-                <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+                <MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
                     @Body
                 </MudContainer>
             </MudMainContent>
@@ -69,8 +96,7 @@
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
     private UserDto user;
-
-    bool drawerOpen = true;
+    private bool drawerOpen = true;
 
     private MudTheme customTheme = new MudTheme()
     {
@@ -135,11 +161,34 @@
         }
     }
 
+
     void DrawerToggle()
     {
         drawerOpen = !drawerOpen;
     }
 
+    private string GetShortName()
+    {
+        if (string.IsNullOrEmpty(user?.FullName))
+            return "";
+        
+        var parts = user.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "";
+        if (parts.Length == 1)
+            return parts[0];
+        
+        // Return first name and first letter of last name
+        return $"{parts[0]} {parts[^1][0]}.";
+    }
+
+    private string GetRoleAbbreviation() => user?.UserRole?.Code switch
+    {
+        "ADMIN" => "ADM",
+        "SUPERVISOR" => "NAD",
+        "WORKER" => "DEL",
+        _ => "?"
+    };
 
     private Color GetRoleColor() => user?.UserRole?.Code switch
     {

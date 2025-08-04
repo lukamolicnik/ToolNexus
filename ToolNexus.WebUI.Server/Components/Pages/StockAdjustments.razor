@@ -14,24 +14,30 @@
 
 <PageTitle>Zgodovina sprememb zaloge - ToolNexus</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">Zgodovina sprememb zaloge</MudText>
-            <MudButton Variant="Variant.Outlined" 
-                      StartIcon="@Icons.Material.Filled.ArrowBack" 
-                      Href="/">
-                Nazaj
-            </MudButton>
-        </MudStack>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
+    <MudStack Spacing="3">
+        <MudGrid AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudItem xs="12" sm="8">
+                <MudText Typo="Typo.h4" Class="text-truncate">Zgodovina sprememb zaloge</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Outlined" 
+                          StartIcon="@Icons.Material.Filled.ArrowBack" 
+                          Href="/">
+                    Nazaj
+                </MudButton>
+            </MudItem>
+        </MudGrid>
 
-        <MudPaper Class="pa-4">
-            <MudGrid>
-                <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-3">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6" md="3">
                     <MudSelect T="int?" @bind-Value="selectedToolId" 
                                Label="Filter po orodju" 
                                Clearable="true"
-                               @bind-Value:after="OnFilterChanged">
+                               @bind-Value:after="OnFilterChanged"
+                               Variant="Variant.Outlined"
+                               Dense="true">
                         @if (tools != null)
                         {
                             @foreach (var tool in tools)
@@ -41,25 +47,38 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="4">
+                <MudItem xs="12" sm="6" md="3">
                     <MudSelect T="StockAdjustmentType?" @bind-Value="selectedType" 
                                Label="Tip spremembe" 
                                Clearable="true"
-                               @bind-Value:after="OnFilterChanged">
+                               @bind-Value:after="OnFilterChanged"
+                               Variant="Variant.Outlined"
+                               Dense="true">
                         <MudSelectItem Value="@((StockAdjustmentType?)StockAdjustmentType.Increase)">Povečanje</MudSelectItem>
                         <MudSelectItem Value="@((StockAdjustmentType?)StockAdjustmentType.Decrease)">Zmanjšanje</MudSelectItem>
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="4">
+                <MudItem xs="12" sm="6" md="3">
                     <MudTextField @bind-Value="searchTerm" 
                                   Label="Iskanje" 
-                                  Placeholder="Orodje, uporabnik, razlog, opombe..."
+                                  Placeholder="Orodje, uporabnik..."
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   Immediate="true"
                                   DebounceInterval="500"
                                   OnDebounceIntervalElapsed="@(async () => await OnFilterChanged())"
-                                  Clearable="true" />
+                                  Clearable="true"
+                                  Variant="Variant.Outlined"
+                                  Dense="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="ResetFilters"
+                               FullWidth="true"
+                               Class="mt-2">
+                        Počisti filtre
+                    </MudButton>
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -227,6 +246,13 @@
         await table.ReloadServerData();
     }
 
+    private async Task ResetFilters()
+    {
+        selectedToolId = null;
+        selectedType = null;
+        searchTerm = string.Empty;
+        await table.ReloadServerData();
+    }
 
     public void Dispose()
     {

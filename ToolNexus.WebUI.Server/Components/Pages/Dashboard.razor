@@ -18,29 +18,37 @@
 <AuthorizeView Context="authContext">
     <Authorized>
         <MudStack Spacing="4">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                @if (user != null)
-                {
-                    <MudText Typo="Typo.h4">
-                        Dobrodošli, @user.FullName
-                    </MudText>
-                    <MudStack Row="true" Spacing="2">
+            <MudGrid AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudItem xs="12" sm="8">
+                    @if (user != null)
+                    {
+                        <MudText Typo="Typo.h4">
+                            Dobrodošli, @user.FullName
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h4">
+                            Nalagam...
+                        </MudText>
+                    }
+                </MudItem>
+                <MudItem xs="12" sm="4" Class="d-flex justify-end">
+                    @if (user != null)
+                    {
                         <MudChip Icon="@GetRoleIcon()"
-                            Color="@GetRoleColor()"
-                            Size="Size.Large"
-                            T="string">
+                                Color="@GetRoleColor()"
+                                Size="Size.Large"
+                                T="string">
                             @user.UserRole?.Name
                         </MudChip>
-                    </MudStack>
-                }
-                else
-                {
-                    <MudText Typo="Typo.h4">
-                        Nalagam...
-                    </MudText>
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                }
-            </MudStack>
+                    }
+                    else
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    }
+                </MudItem>
+            </MudGrid>
 
             @* Quick Stats *@
             <MudGrid>

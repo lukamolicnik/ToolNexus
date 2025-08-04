@@ -45,7 +45,7 @@ public class ToolCategoryService : IToolCategoryService
             Name = dto.Name,
             Description = dto.Description,
             IsActive = dto.IsActive,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         var id = await _repository.AddAsync(category);
@@ -71,7 +71,7 @@ public class ToolCategoryService : IToolCategoryService
         category.Name = dto.Name;
         category.Description = dto.Description;
         category.IsActive = dto.IsActive;
-        category.UpdatedAt = DateTime.UtcNow;
+        category.UpdatedAt = DateTime.Now;
 
         await _repository.UpdateAsync(category);
 

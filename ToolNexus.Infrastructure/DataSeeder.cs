@@ -20,7 +20,7 @@ namespace ToolNexus.Infrastructure
             try
             {
                 // Zagotovi, da baza obstaja
-                await context.Database.EnsureCreatedAsync();
+                //await context.Database.EnsureCreatedAsync();
 
                 // Preveri, če že obstajajo role
                 if (await context.UserRoles.AnyAsync())
@@ -34,8 +34,8 @@ namespace ToolNexus.Infrastructure
                     Name = "Administrator",
                     Code = "ADMIN",
                     Description = "Sistem administrator",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
                 
                 var supervisorRole = new UserRole
@@ -43,8 +43,8 @@ namespace ToolNexus.Infrastructure
                     Name = "Nadzornik Proizvodnje",
                     Code = "SUPERVISOR",
                     Description = "Nadzornik proizvodnje",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 var workerRole = new UserRole
@@ -52,8 +52,8 @@ namespace ToolNexus.Infrastructure
                     Name = "Delavec",
                     Code = "WORKER",
                     Description = "Osnovni delavec",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 context.UserRoles.Add(adminRole);
@@ -81,8 +81,8 @@ namespace ToolNexus.Infrastructure
                     UserRoleId = adminRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 context.Users.Add(adminUser);
@@ -98,8 +98,8 @@ namespace ToolNexus.Infrastructure
                     UserRoleId = supervisorRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 context.Users.Add(supervisorUser);
@@ -115,8 +115,8 @@ namespace ToolNexus.Infrastructure
                     UserRoleId = workerRole.Id,
                     IsActive = true,
                     CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 context.Users.Add(workerUser);

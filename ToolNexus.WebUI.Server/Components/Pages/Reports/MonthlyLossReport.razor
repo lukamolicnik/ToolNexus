@@ -13,21 +13,25 @@
 
 <PageTitle>Mesečno Poročilo Izgub</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
     <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">Mesečno Poročilo Izgub</MudText>
-            <MudButton Variant="Variant.Outlined"
-                       StartIcon="@Icons.Material.Filled.ArrowBack"
-                       Href="/reports">
-                Nazaj
-            </MudButton>
-        </MudStack>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.h4">Mesečno Poročilo Izgub</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Href="/">
+                    Nazaj
+                </MudButton>
+            </MudItem>
+        </MudGrid>
 
         <MudPaper Class="pa-4">
             <MudGrid>
-                <MudItem xs="12" sm="3">
-                    <MudSelect @bind-Value="selectedYear" Label="Leto" Required="true">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect @bind-Value="selectedYear" Label="Leto" Required="true" Variant="Variant.Outlined" Dense="true">
                         @for (int year = DateTime.Now.Year; year >= DateTime.Now.Year - 5; year--)
                         {
                             var yearValue = year;
@@ -35,8 +39,8 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="3">
-                    <MudSelect @bind-Value="selectedMonth" Label="Mesec" Required="true">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect @bind-Value="selectedMonth" Label="Mesec" Required="true" Variant="Variant.Outlined" Dense="true">
                         @for (int month = 1; month <= 12; month++)
                         {
                             var monthValue = month;
@@ -44,8 +48,8 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="3">
-                    <MudSelect @bind-Value="selectedCategoryId" Label="Kategorija" Clearable="true">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudSelect @bind-Value="selectedCategoryId" Label="Kategorija" Clearable="true" Variant="Variant.Outlined" Dense="true">
                         @if (categories != null)
                         {
                             @foreach (var category in categories)
@@ -55,12 +59,14 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="3">
+                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Search"
                                OnClick="LoadReport"
-                               Disabled="isLoading">
+                               Disabled="isLoading"
+                               FullWidth="true"
+                               Class="mt-2">
                         @if (isLoading)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" />
@@ -85,32 +91,32 @@
 
                     <MudGrid>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
-                                <MudStack>
+                            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="w-100 h-100">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
                                     <MudText Typo="Typo.h6">@report.Summary.TotalLostQuantity</MudText>
                                     <MudText Typo="Typo.body2">Skupaj Izgubljeno</MudText>
                                 </MudStack>
                             </MudAlert>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled">
-                                <MudStack>
+                            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Class="w-100 h-100">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
                                     <MudText Typo="Typo.h6">@report.Summary.TotalDamagedQuantity</MudText>
                                     <MudText Typo="Typo.body2">Skupaj Poškodovano</MudText>
                                 </MudStack>
                             </MudAlert>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
-                                <MudStack>
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="w-100 h-100">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
                                     <MudText Typo="Typo.h6">@report.Summary.TotalDiscardedQuantity</MudText>
                                     <MudText Typo="Typo.body2">Skupaj Odpisano</MudText>
                                 </MudStack>
                             </MudAlert>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
-                            <MudAlert Severity="Severity.Success" Variant="Variant.Filled">
-                                <MudStack>
+                            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="w-100 h-100">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
                                     <MudText Typo="Typo.h6">@report.Summary.TotalEstimatedValue.ToString("C2")</MudText>
                                     <MudText Typo="Typo.body2">Ocenjena Vrednost</MudText>
                                 </MudStack>

@@ -4,17 +4,19 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json;
 using ToolNexus.Domain.Audit;
+using ToolNexus.Infrastructure.Services;
 
 namespace ToolNexus.Infrastructure.Interceptors
 {
     public class AuditInterceptor : SaveChangesInterceptor
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserContextService _userContextService;
         private readonly List<AuditEntry> _auditEntries = new();
+        private static readonly TimeZoneInfo CentralEuropeTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
 
-        public AuditInterceptor(IHttpContextAccessor httpContextAccessor)
+        public AuditInterceptor(IUserContextService userContextService)
         {
-            _httpContextAccessor = httpContextAccessor;
+            _userContextService = userContextService;
         }
 
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -72,13 +74,13 @@ namespace ToolNexus.Infrastructure.Interceptors
                 var auditEntry = new AuditEntry(entry)
                 {
                     UserId = GetCurrentUserId(),
-                    UserName = GetCurrentUserName()
+                    UserName = _userContextService.GetCurrentUserName()
                 };
 
                 _auditEntries.Add(auditEntry);
 
                 // Set CreatedBy/UpdatedBy fields automatically
-                var currentUser = GetCurrentUserName();
+                var currentUser = _userContextService.GetCurrentUserName();
                 var entityType = entry.Entity.GetType();
                 
                 if (entry.State == EntityState.Added)
@@ -89,7 +91,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     }
                     if (entityType.GetProperty("CreatedAt") != null)
                     {
-                        entry.Property("CreatedAt").CurrentValue = DateTime.UtcNow;
+                        entry.Property("CreatedAt").CurrentValue = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralEuropeTimeZone);
                     }
                     if (entityType.GetProperty("UpdatedBy") != null)
                     {
@@ -97,7 +99,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     }
                     if (entityType.GetProperty("UpdatedAt") != null)
                     {
-                        entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
+                        entry.Property("UpdatedAt").CurrentValue = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralEuropeTimeZone);
                     }
                 }
                 else if (entry.State == EntityState.Modified)
@@ -108,7 +110,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     }
                     if (entityType.GetProperty("UpdatedAt") != null)
                     {
-                        entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
+                        entry.Property("UpdatedAt").CurrentValue = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralEuropeTimeZone);
                     }
                 }
 
@@ -179,7 +181,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     Action = auditEntry.Action,
                     UserId = auditEntry.UserId,
                     UserName = auditEntry.UserName,
-                    Timestamp = DateTime.UtcNow,
+                    Timestamp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralEuropeTimeZone),
                     TableName = auditEntry.TableName
                 };
 
@@ -217,8 +219,8 @@ namespace ToolNexus.Infrastructure.Interceptors
 
         private Guid GetCurrentUserId()
         {
-            var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("UserId")?.Value;
-            if (int.TryParse(userIdClaim, out var intUserId))
+            var userIdString = _userContextService.GetCurrentUserId();
+            if (int.TryParse(userIdString, out var intUserId))
             {
                 // Convert int user ID to Guid for audit trail
                 // Using a deterministic GUID based on the int ID
@@ -227,12 +229,6 @@ namespace ToolNexus.Infrastructure.Interceptors
                 return new Guid(bytes);
             }
             return Guid.Empty;
-        }
-
-        private string GetCurrentUserName()
-        {
-            var userName = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
-            return userName ?? "System";
         }
 
         private class AuditEntry

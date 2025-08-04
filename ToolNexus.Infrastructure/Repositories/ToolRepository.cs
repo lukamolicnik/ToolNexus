@@ -56,7 +56,7 @@ namespace ToolNexus.Infrastructure.Repositories
                 existingTool.CriticalStock = tool.CriticalStock;
                 existingTool.ToolCategoryId = tool.ToolCategoryId;
                 existingTool.UpdatedBy = tool.UpdatedBy;
-                existingTool.UpdatedAt = DateTime.UtcNow;
+                existingTool.UpdatedAt = DateTime.Now;
                 
                 await context.SaveChangesAsync();
             }

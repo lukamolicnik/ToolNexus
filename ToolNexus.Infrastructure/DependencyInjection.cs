@@ -12,6 +12,7 @@ using ToolNexus.Domain.DeliveryNotes;
 using ToolNexus.Domain.StockAdjustments;
 using ToolNexus.Infrastructure.Interceptors;
 using ToolNexus.Infrastructure.Repositories;
+using ToolNexus.Infrastructure.Services;
 
 namespace ToolNexus.Infrastructure
 {
@@ -22,14 +23,22 @@ namespace ToolNexus.Infrastructure
             // Register HttpContextAccessor for AuditInterceptor
             services.AddHttpContextAccessor();
 
+            // Register UserContextService
+            services.AddScoped<IUserContextService, UserContextService>();
+
+            // Register AuditInterceptor as scoped to maintain HttpContext
+            services.AddScoped<AuditInterceptor>();
+
             // Use DbContextFactory for thread-safe DbContext creation with audit interceptor
             services.AddDbContextFactory<ApplicationDbContext>((serviceProvider, options) =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
                 
-                // Add audit interceptor to factory as well
+                // Always create a new audit interceptor with the current service provider
+                // This ensures we get the correct HttpContext
                 var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
-                var auditInterceptor = new AuditInterceptor(httpContextAccessor);
+                var userContextService = new UserContextService(httpContextAccessor);
+                var auditInterceptor = new AuditInterceptor(userContextService);
                 options.AddInterceptors(auditInterceptor);
             });
 
@@ -39,9 +48,8 @@ namespace ToolNexus.Infrastructure
                 var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
                 optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
                 
-                // Add audit interceptor
-                var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
-                var auditInterceptor = new AuditInterceptor(httpContextAccessor);
+                // Get the scoped audit interceptor
+                var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
                 optionsBuilder.AddInterceptors(auditInterceptor);
                 
                 return new ApplicationDbContext(optionsBuilder.Options);

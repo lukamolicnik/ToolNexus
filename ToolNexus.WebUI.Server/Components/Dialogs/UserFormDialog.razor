@@ -6,8 +6,8 @@
 
 @if (IsVisible)
 {
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; max-height: 90vh; overflow-y: auto;">
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto; padding: 20px 10px;">
+        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; margin: 20px auto;" Elevation="8">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudText Typo="Typo.h5">@(IsEdit ? "Uredi uporabnika" : "Dodaj uporabnika")</MudText>

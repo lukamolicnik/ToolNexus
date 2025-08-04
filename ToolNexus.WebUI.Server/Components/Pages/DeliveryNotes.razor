@@ -10,24 +10,35 @@
 
 <PageTitle>Dobavnice - ToolNexus</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">Dobavnice</MudText>
-            <MudStack Row="true" Spacing="2">
-                <MudButton Variant="Variant.Filled" 
-                          Color="Color.Primary" 
-                          StartIcon="@Icons.Material.Filled.Add"
-                          OnClick="CreateDeliveryNote">
-                    Nova dobavnica
-                </MudButton>
-                <MudButton Variant="Variant.Outlined" 
-                          StartIcon="@Icons.Material.Filled.ArrowBack" 
-                          Href="/">
-                    Nazaj
-                </MudButton>
-            </MudStack>
-        </MudStack>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
+    <MudStack Spacing="3">
+        <MudGrid AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.h4" Class="text-truncate">Dobavnice</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="d-flex justify-end">
+                <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="CreateDeliveryNote"
+                              Class="mb-2 mb-sm-0">
+                        <MudHidden Breakpoint="Breakpoint.Xs">
+                            Nova dobavnica
+                        </MudHidden>
+                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                            Nova
+                        </MudHidden>
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                              StartIcon="@Icons.Material.Filled.ArrowBack" 
+                              Href="/"
+                              Class="mb-2 mb-sm-0">
+                        Nazaj
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
 
         @if (deliveryNotes == null)
         {

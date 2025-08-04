@@ -1,29 +1,74 @@
 @inject IToolService ToolService
+@inject IToolCategoryService ToolCategoryService
 @inject ISnackbar Snackbar
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 @using ToolNexus.Application.Tools.DTOs
+@using ToolNexus.Application.ToolCategories
+@using ToolNexus.Application.ToolCategories.DTOs
 @using System.ComponentModel.DataAnnotations
 
 @if (IsVisible)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto; padding: 20px 10px;">
-        <MudPaper Class="pa-6" Style="max-width: 500px; width: 90vw; margin: 20px auto;" Elevation="8">
+        <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; margin: 20px auto;" Elevation="8">
             <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
                 <MudStack Spacing="3">
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.h5">Upravljanje zaloge</MudText>
+                        <MudText Typo="Typo.h5">Hitro upravljanje zaloge</MudText>
                         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="HandleCancel" />
                     </MudStack>
 
-                    @if (Tool != null)
+                    @if (isLoadingData)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                        <MudText Align="Align.Center" Typo="Typo.body2">Nalagam podatke...</MudText>
+                    }
+                    else
+                    {
+                        <MudSelect T="int?" @bind-Value="categoryFilter" 
+                                   Label="Filter po kategoriji" 
+                                   Clearable="true"
+                                   @bind-Value:after="FilterToolsByCategory"
+                                   Variant="Variant.Outlined"
+                                   Dense="true">
+                            @if (categories != null)
+                            {
+                                @foreach (var category in categories)
+                                {
+                                    <MudSelectItem Value="@((int?)category.Id)">@category.Name</MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+
+                        <MudAutocomplete T="ToolDto" 
+                                         @bind-Value="selectedTool"
+                                         Label="Izberi orodje"
+                                         SearchFunc="@SearchTools"
+                                         ToStringFunc="@(tool => tool == null ? null : $"{tool.Name} ({tool.Code})")"
+                                         Dense="true"
+                                         Variant="Variant.Outlined"
+                                         ResetValueOnEmptyText="true"
+                                         ShowProgressIndicator="true"
+                                         Required="true"
+                                         @bind-Value:after="OnToolSelected">
+                            <ItemTemplate Context="tool">
+                                <MudStack Spacing="0">
+                                    <MudText>@tool.Name (@tool.Code)</MudText>
+                                    <MudText Typo="Typo.caption">Trenutna zaloga: @tool.CurrentStock</MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    }
+
+                    @if (selectedTool != null)
                     {
                         <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
                             <MudStack>
-                                <MudText><strong>Orodje:</strong> @Tool.Name (@Tool.Code)</MudText>
-                                <MudText><strong>Trenutna zaloga:</strong> @Tool.CurrentStock</MudText>
-                                <MudText><strong>Minimalna zaloga:</strong> @Tool.MinimumStock | <strong>Kritična zaloga:</strong> @Tool.CriticalStock</MudText>
+                                <MudText><strong>Orodje:</strong> @selectedTool.Name (@selectedTool.Code)</MudText>
+                                <MudText><strong>Trenutna zaloga:</strong> @selectedTool.CurrentStock</MudText>
+                                <MudText><strong>Minimalna zaloga:</strong> @selectedTool.MinimumStock | <strong>Kritična zaloga:</strong> @selectedTool.CriticalStock</MudText>
                             </MudStack>
                         </MudAlert>
 
@@ -105,8 +150,6 @@
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
-    [Parameter] public ToolDto? Tool { get; set; }
-    [Parameter] public bool IsIncreaseMode { get; set; } = true;
     [Parameter] public EventCallback<bool> OnResult { get; set; }
 
     [CascadingParameter]
@@ -116,41 +159,119 @@
     private StockAdjustmentModel adjustmentModel = new();
     private bool isSubmitting = false;
     private bool canIncrease = false;
+    private bool isLoadingData = false;
+    
+    private List<ToolDto>? tools;
+    private List<ToolDto>? filteredTools;
+    private List<ToolCategoryDto>? categories;
+    private int? categoryFilter;
+    private ToolDto? selectedTool;
 
-    protected override async void OnParametersSet()
+    protected override async Task OnInitializedAsync()
     {
-        if (IsVisible && Tool != null)
+        // Check user roles
+        var authState = await authenticationStateTask;
+        if (authState.User.Identity.IsAuthenticated)
         {
-            // Check user roles
-            var authState = await authenticationStateTask;
-            if (authState.User.Identity.IsAuthenticated)
+            var userRoles = authState.User.Claims
+                .Where(c => c.Type == ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToList();
+            
+            canIncrease = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+        }
+        
+        editContext = new EditContext(adjustmentModel);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible)
+        {
+            // Load data when dialog opens
+            if (tools == null || categories == null)
             {
-                var userRoles = authState.User.Claims
-                    .Where(c => c.Type == ClaimTypes.Role)
-                    .Select(c => c.Value)
-                    .ToList();
-                
-                canIncrease = userRoles.Contains("ADMIN") || userRoles.Contains("SUPERVISOR");
+                await LoadData();
             }
             
-            // If user wants to increase but doesn't have permission, default to decrease
-            var effectiveMode = IsIncreaseMode && !canIncrease ? false : IsIncreaseMode;
-            
+            // Reset form when dialog opens
+            categoryFilter = null;
+            selectedTool = null;
             adjustmentModel = new StockAdjustmentModel
             {
-                ToolId = Tool.Id,
-                AdjustmentType = effectiveMode ? StockAdjustmentType.Increase : StockAdjustmentType.Decrease,
+                AdjustmentType = canIncrease ? StockAdjustmentType.Increase : StockAdjustmentType.Decrease,
                 Quantity = 1
             };
-            
+            filteredTools = tools;
             editContext = new EditContext(adjustmentModel);
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoadingData = true;
+            StateHasChanged();
+            
+            // Load categories and tools separately to avoid DbContext conflicts
+            categories = await ToolCategoryService.GetActiveAsync();
+            tools = await ToolService.GetAllToolsAsync();
+            filteredTools = tools;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Napaka pri nalaganju podatkov: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoadingData = false;
+            StateHasChanged();
+        }
+    }
+
+    private void FilterToolsByCategory()
+    {
+        if (categoryFilter.HasValue && tools != null)
+        {
+            filteredTools = tools.Where(t => t.ToolCategoryId == categoryFilter.Value).ToList();
+        }
+        else
+        {
+            filteredTools = tools;
+        }
+        selectedTool = null;
+        StateHasChanged();
+    }
+
+    private async Task<IEnumerable<ToolDto>> SearchTools(string value, CancellationToken cancellationToken = default)
+    {
+        await Task.Delay(5, cancellationToken); // Small delay for better UX
+        
+        var toolsToSearch = filteredTools ?? tools ?? new List<ToolDto>();
+        
+        if (string.IsNullOrEmpty(value))
+            return toolsToSearch.Take(10);
+            
+        return toolsToSearch.Where(t => 
+            t.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            t.Code.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Take(10);
+    }
+
+    private void OnToolSelected()
+    {
+        if (selectedTool != null)
+        {
+            adjustmentModel.ToolId = selectedTool.Id;
             StateHasChanged();
         }
     }
 
     private async Task HandleValidSubmit()
     {
-        if (Tool == null) return;
+        if (selectedTool == null) return;
 
         // Custom validation for decrease
         if (adjustmentModel.AdjustmentType == StockAdjustmentType.Decrease && string.IsNullOrWhiteSpace(adjustmentModel.Reason))
@@ -171,24 +292,24 @@
             {
                 await ToolService.IncreaseStockAsync(new IncreaseStockDto
                 {
-                    ToolId = Tool.Id,
+                    ToolId = selectedTool.Id,
                     Quantity = adjustmentModel.Quantity,
                     Notes = adjustmentModel.Notes,
                     UserId = userId
                 });
-                Snackbar.Add($"Zaloga orodja {Tool.Name} je bila uspešno povečana za {adjustmentModel.Quantity}.", Severity.Success);
+                Snackbar.Add($"Zaloga orodja {selectedTool.Name} je bila uspešno povečana za {adjustmentModel.Quantity}.", Severity.Success);
             }
             else
             {
                 await ToolService.DecreaseStockAsync(new DecreaseStockDto
                 {
-                    ToolId = Tool.Id,
+                    ToolId = selectedTool.Id,
                     Quantity = adjustmentModel.Quantity,
                     Reason = adjustmentModel.Reason!,
                     Notes = adjustmentModel.Notes,
                     UserId = userId
                 });
-                Snackbar.Add($"Zaloga orodja {Tool.Name} je bila uspešno zmanjšana za {adjustmentModel.Quantity}.", Severity.Success);
+                Snackbar.Add($"Zaloga orodja {selectedTool.Name} je bila uspešno zmanjšana za {adjustmentModel.Quantity}.", Severity.Success);
             }
 
             await OnResult.InvokeAsync(true);
@@ -215,26 +336,26 @@
 
     private string GetQuantityHelperText()
     {
-        if (Tool == null) return "";
+        if (selectedTool == null) return "";
         
         if (adjustmentModel.AdjustmentType == StockAdjustmentType.Decrease)
         {
-            return $"Maksimalno: {Tool.CurrentStock}";
+            return $"Maksimalno: {selectedTool.CurrentStock}";
         }
         return "Vnesite količino za povečanje zaloge";
     }
 
     private Severity GetPreviewSeverity()
     {
-        if (Tool == null) return Severity.Info;
+        if (selectedTool == null) return Severity.Info;
 
         var newStock = adjustmentModel.AdjustmentType == StockAdjustmentType.Increase
-            ? Tool.CurrentStock + adjustmentModel.Quantity
-            : Tool.CurrentStock - adjustmentModel.Quantity;
+            ? selectedTool.CurrentStock + adjustmentModel.Quantity
+            : selectedTool.CurrentStock - adjustmentModel.Quantity;
 
-        if (newStock <= Tool.CriticalStock)
+        if (newStock <= selectedTool.CriticalStock)
             return Severity.Error;
-        if (newStock <= Tool.MinimumStock)
+        if (newStock <= selectedTool.MinimumStock)
             return Severity.Warning;
         
         return Severity.Success;
@@ -242,17 +363,17 @@
 
     private string GetPreviewMessage()
     {
-        if (Tool == null) return "";
+        if (selectedTool == null) return "";
 
         var newStock = adjustmentModel.AdjustmentType == StockAdjustmentType.Increase
-            ? Tool.CurrentStock + adjustmentModel.Quantity
-            : Tool.CurrentStock - adjustmentModel.Quantity;
+            ? selectedTool.CurrentStock + adjustmentModel.Quantity
+            : selectedTool.CurrentStock - adjustmentModel.Quantity;
 
         if (newStock < 0)
             return "⚠️ Zaloga ne more biti negativna!";
 
-        var stockStatus = newStock <= Tool.CriticalStock ? " (KRITIČNO!)" 
-            : newStock <= Tool.MinimumStock ? " (pod minimalno zalogo)" 
+        var stockStatus = newStock <= selectedTool.CriticalStock ? " (KRITIČNO!)" 
+            : newStock <= selectedTool.MinimumStock ? " (pod minimalno zalogo)" 
             : "";
 
         return $"Nova zaloga bo: {newStock}{stockStatus}";

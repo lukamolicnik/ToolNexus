@@ -42,7 +42,7 @@ namespace ToolNexus.Application.Users
 
             var ipAttempts = _cache.Get<List<LoginAttemptDto>>(ipAttemptsKey) ?? new List<LoginAttemptDto>();
             var recentIpAttempts = ipAttempts.Count(a => !a.Success && 
-                a.AttemptTime > DateTime.UtcNow.AddMinutes(-TimeWindowMinutes));
+                a.AttemptTime > DateTime.Now.AddMinutes(-TimeWindowMinutes));
             
             if (recentIpAttempts >= MaxAttemptsPerIp)
             {
@@ -62,7 +62,7 @@ namespace ToolNexus.Application.Users
             {
                 Username = username,
                 IpAddress = ipAddress,
-                AttemptTime = DateTime.UtcNow,
+                AttemptTime = DateTime.Now,
                 Success = success
             };
 
@@ -71,7 +71,7 @@ namespace ToolNexus.Application.Users
             userAttempts.Add(attempt);
             
             // Ohrani samo poskuse iz zadnjih 24 ur
-            userAttempts = userAttempts.Where(a => a.AttemptTime > DateTime.UtcNow.AddHours(-24)).ToList();
+            userAttempts = userAttempts.Where(a => a.AttemptTime > DateTime.Now.AddHours(-24)).ToList();
             _cache.Set(userAttemptsKey, userAttempts, TimeSpan.FromHours(24));
 
             // Shrani poskus za IP
@@ -79,7 +79,7 @@ namespace ToolNexus.Application.Users
             ipAttempts.Add(attempt);
             
             // Ohrani samo poskuse iz zadnjih 24 ur
-            ipAttempts = ipAttempts.Where(a => a.AttemptTime > DateTime.UtcNow.AddHours(-24)).ToList();
+            ipAttempts = ipAttempts.Where(a => a.AttemptTime > DateTime.Now.AddHours(-24)).ToList();
             _cache.Set(ipAttemptsKey, ipAttempts, TimeSpan.FromHours(24));
 
             // Če je bila prijava uspešna, počisti neuspešne poskuse
@@ -96,7 +96,7 @@ namespace ToolNexus.Application.Users
             var userAttemptsKey = $"login_attempts_user_{username}";
             var attempts = _cache.Get<List<LoginAttemptDto>>(userAttemptsKey) ?? new List<LoginAttemptDto>();
             
-            var cutoffTime = DateTime.UtcNow.Subtract(timeWindow);
+            var cutoffTime = DateTime.Now.Subtract(timeWindow);
             var failedAttempts = attempts.Count(a => !a.Success && a.AttemptTime > cutoffTime);
             
             return await Task.FromResult(failedAttempts);

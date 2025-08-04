@@ -14,26 +14,49 @@
 
 <PageTitle>Orodja - ToolNexus</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">Orodja</MudText>
-            <MudStack Row="true" Spacing="2">
-                <AuthorizeView Roles="ADMIN,SUPERVISOR">
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
+    <MudStack Spacing="3">
+        <MudGrid AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.h4" Class="text-truncate">Orodja</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="d-flex justify-end">
+                <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                    <AuthorizeView Roles="ADMIN,SUPERVISOR">
+                        <MudButton Variant="Variant.Filled" 
+                                  Color="Color.Primary" 
+                                  StartIcon="@Icons.Material.Filled.Add"
+                                  OnClick="CreateTool"
+                                  Class="mb-2 mb-sm-0">
+                            <MudHidden Breakpoint="Breakpoint.Xs">
+                                Dodaj orodje
+                            </MudHidden>
+                            <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                                Dodaj
+                            </MudHidden>
+                        </MudButton>
+                    </AuthorizeView>
                     <MudButton Variant="Variant.Filled" 
-                              Color="Color.Primary" 
-                              StartIcon="@Icons.Material.Filled.Add"
-                              OnClick="CreateTool">
-                        Dodaj orodje
+                              Color="Color.Success" 
+                              StartIcon="@Icons.Material.Filled.Inventory"
+                              OnClick="OpenQuickStockDialog"
+                              Class="mb-2 mb-sm-0">
+                        <MudHidden Breakpoint="Breakpoint.Xs">
+                            Uredi zalogo
+                        </MudHidden>
+                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                            Zaloga
+                        </MudHidden>
                     </MudButton>
-                </AuthorizeView>
-                <MudButton Variant="Variant.Outlined" 
-                          StartIcon="@Icons.Material.Filled.ArrowBack" 
-                          Href="/">
-                    Nazaj
-                </MudButton>
-            </MudStack>
-        </MudStack>
+                    <MudButton Variant="Variant.Outlined" 
+                              StartIcon="@Icons.Material.Filled.ArrowBack" 
+                              Href="/"
+                              Class="mb-2 mb-sm-0">
+                        Nazaj
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
 
         @if (filteredTools == null)
         {
@@ -169,6 +192,9 @@
     </div>
 }
 
+<QuickStockDialog IsVisible="@showQuickStockDialog"
+                  OnResult="HandleQuickStockDialogResult" />
+
 @code {
     private List<ToolDto>? tools;
     private List<ToolDto>? filteredTools;
@@ -186,6 +212,9 @@
     private bool showStockDialog = false;
     private string categoryFilter = string.Empty;
     private List<ToolCategoryDto>? categories;
+    
+    // Quick stock dialog variables
+    private bool showQuickStockDialog = false;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
@@ -387,5 +416,22 @@
     {
         ApplyFilters();
         StateHasChanged();
+    }
+    
+    // Quick Stock Dialog Methods
+    private Task OpenQuickStockDialog()
+    {
+        showQuickStockDialog = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+    
+    private async Task HandleQuickStockDialogResult(bool success)
+    {
+        showQuickStockDialog = false;
+        if (success)
+        {
+            await LoadTools();
+        }
     }
 }

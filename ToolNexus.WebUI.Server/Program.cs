@@ -1,5 +1,6 @@
 using ToolNexus.WebUI.Server.Components;
 using ToolNexus.WebUI.Server.Services;
+using ToolNexus.WebUI.Server.Middleware;
 using ToolNexus.Application;
 using ToolNexus.Infrastructure;
 using ToolNexus.Application.Users;
@@ -51,11 +52,10 @@ builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTPS request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHttpsRedirection();
     app.UseHsts();
 }
 
@@ -65,6 +65,9 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add UserContext middleware after authentication
+app.UseUserContext();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -12,24 +12,35 @@
 
 <PageTitle>Kategorije orodij - ToolNexus</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudStack Spacing="4">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">Kategorije orodij</MudText>
-            <MudStack Row="true" Spacing="2">
-                <MudButton Variant="Variant.Filled" 
-                          Color="Color.Primary" 
-                          StartIcon="@Icons.Material.Filled.Add"
-                          OnClick="CreateCategory">
-                    Dodaj kategorijo
-                </MudButton>
-                <MudButton Variant="Variant.Outlined" 
-                          StartIcon="@Icons.Material.Filled.ArrowBack" 
-                          Href="/">
-                    Nazaj
-                </MudButton>
-            </MudStack>
-        </MudStack>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-2 pa-sm-3 pa-md-4">
+    <MudStack Spacing="3">
+        <MudGrid AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.h4" Class="text-truncate">Kategorije orodij</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="d-flex justify-end">
+                <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="CreateCategory"
+                              Class="mb-2 mb-sm-0">
+                        <MudHidden Breakpoint="Breakpoint.Xs">
+                            Dodaj kategorijo
+                        </MudHidden>
+                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                            Dodaj
+                        </MudHidden>
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                              StartIcon="@Icons.Material.Filled.ArrowBack" 
+                              Href="/"
+                              Class="mb-2 mb-sm-0">
+                        Nazaj
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
 
         @if (filteredCategories == null)
         {

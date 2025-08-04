@@ -53,8 +53,8 @@ namespace ToolNexus.Application.Users
                 UserRoleId = createUserDto.UserRoleId,
                 IsActive = createUserDto.IsActive,
                 CreatedBy = createdBy,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             };
 
             var createdUser = await _userRepository.CreateUserAsync(user);
@@ -85,7 +85,7 @@ namespace ToolNexus.Application.Users
             existingUser.UserRoleId = updateUserDto.UserRoleId;
             existingUser.IsActive = updateUserDto.IsActive;
             existingUser.UpdatedBy = updatedBy;
-            existingUser.UpdatedAt = DateTime.UtcNow;
+            existingUser.UpdatedAt = DateTime.Now;
 
             // Posodobi geslo, če je podano
             if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
@@ -111,7 +111,7 @@ namespace ToolNexus.Application.Users
             }
 
             user.IsActive = !user.IsActive;
-            user.UpdatedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.Now;
 
             var updatedUser = await _userRepository.UpdateUserAsync(user);
             return updatedUser != null;

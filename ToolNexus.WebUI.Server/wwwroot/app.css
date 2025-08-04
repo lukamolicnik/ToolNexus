@@ -67,12 +67,58 @@ html, body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    /* Container with proper padding */
     .mud-container {
-        padding: 8px !important;
+        padding: 16px !important;
     }
-
+    
+    /* Center the grid items (parent containers) - but not in data grids */
+    .mud-grid:not(.mud-data-grid) {
+        justify-content: center !important;
+    }
+    
     .mud-grid-item {
-        padding: 8px !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+    
+    /* But keep the content inside left-aligned */
+    .mud-paper,
+    .mud-card {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Only apply text alignment to specific non-table elements */
+    .mud-card .mud-text,
+    .mud-alert .mud-text {
+        text-align: left !important;
+    }
+    
+    /* Dashboard specific text alignment */
+    .dashboard-card .mud-text,
+    .mud-paper > .mud-stack .mud-text {
+        text-align: left !important;
+    }
+    
+    /* IMPORTANT: Override for DataGrid - DO NOT change alignment */
+    .mud-table-container *,
+    .mud-table *,
+    .mud-table-cell,
+    .mud-table-cell *,
+    td.mud-table-cell .mud-text {
+        text-align: revert !important;
+    }
+    
+    /* Keep stacks with their original alignment */
+    .mud-paper .mud-stack[class*="justify-space-between"],
+    .mud-card .mud-stack[class*="justify-space-between"] {
+        justify-content: space-between !important;
+    }
+    
+    /* Center only the card actions (buttons) */
+    .mud-card-actions {
+        justify-content: center !important;
     }
 }
 

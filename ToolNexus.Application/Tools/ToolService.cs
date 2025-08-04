@@ -47,8 +47,8 @@ namespace ToolNexus.Application.Tools
                 CurrentStock = 0,
                 CreatedBy = userId,
                 UpdatedBy = userId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             };
 
             await _toolRepository.AddAsync(tool);
@@ -93,7 +93,7 @@ namespace ToolNexus.Application.Tools
             var previousStock = tool.CurrentStock;
             tool.CurrentStock += increaseStockDto.Quantity;
             tool.UpdatedBy = increaseStockDto.UserId;
-            tool.UpdatedAt = DateTime.UtcNow;
+            tool.UpdatedAt = DateTime.Now;
 
             await _toolRepository.UpdateAsync(tool);
             
@@ -107,7 +107,7 @@ namespace ToolNexus.Application.Tools
                 NewStock = tool.CurrentStock,
                 Notes = increaseStockDto.Notes,
                 AdjustedBy = increaseStockDto.UserId,
-                AdjustedAt = DateTime.UtcNow
+                AdjustedAt = DateTime.Now
             };
             
             await _stockAdjustmentRepository.AddAsync(adjustment);
@@ -127,7 +127,7 @@ namespace ToolNexus.Application.Tools
             var previousStock = tool.CurrentStock;
             tool.CurrentStock -= decreaseStockDto.Quantity;
             tool.UpdatedBy = decreaseStockDto.UserId;
-            tool.UpdatedAt = DateTime.UtcNow;
+            tool.UpdatedAt = DateTime.Now;
 
             await _toolRepository.UpdateAsync(tool);
             
@@ -142,7 +142,7 @@ namespace ToolNexus.Application.Tools
                 Reason = decreaseStockDto.Reason,
                 Notes = decreaseStockDto.Notes,
                 AdjustedBy = decreaseStockDto.UserId,
-                AdjustedAt = DateTime.UtcNow
+                AdjustedAt = DateTime.Now
             };
             
             await _stockAdjustmentRepository.AddAsync(adjustment);
