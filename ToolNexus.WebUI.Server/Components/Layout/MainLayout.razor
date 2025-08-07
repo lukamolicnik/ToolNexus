@@ -1,9 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Authentication
 @using System.Security.Claims
 @using MudBlazor
+@using ToolNexus.WebUI.Server.Components.Dialogs
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject IUserService UserService
+@inject ISnackbar Snackbar
 
 <MudThemeProvider Theme="@customTheme" />
 
@@ -30,13 +32,20 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mr-2">
                     @if (user != null)
                     {
-                        <MudHidden Breakpoint="Breakpoint.Xs">
-                            <MudText Typo="Typo.body2" Class="mr-1">@user.FullName</MudText>
-                        </MudHidden>
-                        
-                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
-                            <MudText Typo="Typo.body2" Class="mr-1">@GetShortName()</MudText>
-                        </MudHidden>
+                        <MudTooltip Text="Uredi profil">
+                            <MudButton OnClick="OpenProfileDialog" 
+                                       Color="Color.Inherit" 
+                                       Variant="Variant.Text"
+                                       Class="pa-1 text-none"
+                                       Style="min-width: auto;">
+                                <MudHidden Breakpoint="Breakpoint.Xs">
+                                    <MudText Typo="Typo.body2">@user.FullName</MudText>
+                                </MudHidden>
+                                <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                                    <MudText Typo="Typo.body2">@GetShortName()</MudText>
+                                </MudHidden>
+                            </MudButton>
+                        </MudTooltip>
                         
                         <MudChip Size="Size.Small"
                                  Color="@GetRoleColor()"
@@ -88,6 +97,12 @@
     </NotAuthorized>
 </AuthorizeView>
 
+<UserFormDialog IsVisible="@showProfileDialog"
+                User="@user"
+                IsEdit="true"
+                IsProfileMode="true"
+                OnResult="HandleProfileDialogResult" />
+
 @code {
     [CascadingParameter]
     public HttpContext HttpContext { get; set; }
@@ -97,6 +112,7 @@
 
     private UserDto user;
     private bool drawerOpen = true;
+    private bool showProfileDialog = false;
 
     private MudTheme customTheme = new MudTheme()
     {
@@ -126,39 +142,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            // Najprej pokušamo z HttpContext (SSR)
-            if (HttpContext?.User?.Identity?.IsAuthenticated == true)
-            {
-                var userId = Int32.Parse(HttpContext.User.Identities
-                    .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
-                    .FirstOrDefault());
-
-                user = await UserService.GetUserByIdAsync(userId);
-                StateHasChanged();
-            }
-            // Če HttpContext ni dostopen, uporabimo AuthenticationStateProvider (InteractiveServer)
-            else if (authenticationStateTask != null)
-            {
-                var authState = await authenticationStateTask;
-                
-                if (authState.User.Identity.IsAuthenticated)
-                {
-                    var userId = Int32.Parse(authState.User.Identities
-                        .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
-                        .FirstOrDefault());
-
-                    user = await UserService.GetUserByIdAsync(userId);
-                    StateHasChanged();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            // Handle the error gracefully
-            Console.WriteLine($"Error in MainLayout initialization: {ex.Message}");
-        }
+        await LoadUserData();
+        StateHasChanged();
     }
 
 
@@ -197,4 +182,59 @@
         "WORKER" => Color.Info,
         _ => Color.Default
     };
+    
+    private void OpenProfileDialog()
+    {
+        showProfileDialog = true;
+    }
+    
+    private async Task HandleProfileDialogResult(bool success)
+    {
+        showProfileDialog = false;
+        
+        if (success)
+        {
+            // Ponovno naloži uporabnikove podatke
+            await LoadUserData();
+            Snackbar.Add("Profil je bil uspešno posodobljen.", Severity.Success);
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadUserData()
+    {
+        try
+        {
+            int userId = 0;
+            
+            // Najprej pokušamo z HttpContext (SSR)
+            if (HttpContext?.User?.Identity?.IsAuthenticated == true)
+            {
+                userId = Int32.Parse(HttpContext.User.Identities
+                    .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                    .FirstOrDefault() ?? "0");
+            }
+            // Če HttpContext ni dostopen, uporabimo AuthenticationStateProvider (InteractiveServer)
+            else if (authenticationStateTask != null)
+            {
+                var authState = await authenticationStateTask;
+                
+                if (authState.User.Identity?.IsAuthenticated == true)
+                {
+                    userId = Int32.Parse(authState.User.Identities
+                        .Select(i => i.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value)
+                        .FirstOrDefault() ?? "0");
+                }
+            }
+            
+            if (userId > 0)
+            {
+                user = await UserService.GetUserByIdAsync(userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user data: {ex.Message}");
+        }
+    }
 }

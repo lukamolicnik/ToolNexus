@@ -6,6 +6,7 @@
 @using ToolNexus.Application.Tools.DTOs
 @using ToolNexus.Application.ToolCategories
 @using ToolNexus.Application.ToolCategories.DTOs
+@using ToolNexus.WebUI.Server.Components.Shared
 @using System.ComponentModel.DataAnnotations
 
 @if (IsVisible)
@@ -27,6 +28,18 @@
                     }
                     else
                     {
+                        <MudExpansionPanels Elevation="1" Class="mb-3">
+                            <MudExpansionPanel Text="Skeniranje QR kode" Icon="@Icons.Material.Filled.QrCodeScanner">
+                                <QRCodeScanner OnCodeScanned="HandleScannedCode" />
+                                @if (!string.IsNullOrEmpty(scannedCode))
+                                {
+                                    <MudAlert Severity="Severity.Info" Class="mt-2">
+                                        Skenirana koda: @scannedCode
+                                    </MudAlert>
+                                }
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                        
                         <MudSelect T="int?" @bind-Value="categoryFilter" 
                                    Label="Filter po kategoriji" 
                                    Clearable="true"
@@ -166,6 +179,7 @@
     private List<ToolCategoryDto>? categories;
     private int? categoryFilter;
     private ToolDto? selectedTool;
+    private string? scannedCode;
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,6 +211,7 @@
             // Reset form when dialog opens
             categoryFilter = null;
             selectedTool = null;
+            scannedCode = null;
             adjustmentModel = new StockAdjustmentModel
             {
                 AdjustmentType = canIncrease ? StockAdjustmentType.Increase : StockAdjustmentType.Decrease,
@@ -377,6 +392,37 @@
             : "";
 
         return $"Nova zaloga bo: {newStock}{stockStatus}";
+    }
+    
+    private async Task HandleScannedCode(string code)
+    {
+        scannedCode = code;
+        
+        // Poišči orodje po kodi
+        if (tools != null && !string.IsNullOrEmpty(code))
+        {
+            var tool = tools.FirstOrDefault(t => t.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+            if (tool != null)
+            {
+                // Če ima orodje kategorijo, nastavi filter
+                if (tool.ToolCategoryId.HasValue)
+                {
+                    categoryFilter = tool.ToolCategoryId.Value;
+                    FilterToolsByCategory();
+                }
+                
+                selectedTool = tool;
+                OnToolSelected();
+                
+                Snackbar.Add($"Najdeno orodje: {tool.Name}", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Orodje s kodo '{code}' ni bilo najdeno.", Severity.Warning);
+            }
+        }
+        
+        StateHasChanged();
     }
 
     public enum StockAdjustmentType

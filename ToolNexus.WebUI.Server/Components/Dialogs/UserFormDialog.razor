@@ -10,7 +10,7 @@
         <MudPaper Class="pa-6" Style="max-width: 600px; width: 90vw; margin: 20px auto;" Elevation="8">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">@(IsEdit ? "Uredi uporabnika" : "Dodaj uporabnika")</MudText>
+                    <MudText Typo="Typo.h5">@GetDialogTitle()</MudText>
                     <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleCancel" />
                 </MudStack>
 
@@ -86,19 +86,38 @@
                                               Required="true" />
                             }
 
-                            @if (IsEdit)
+                            @if (!IsProfileMode)
                             {
-                                @if (isEditingSelf)
+                                @if (IsEdit)
                                 {
-                                    <MudTextField @bind-Value="@(User.UserRole.Name)"
+                                    @if (isEditingSelf)
+                                    {
+                                        <MudTextField @bind-Value="@(User.UserRole.Name)"
+                                                      Label="Vloga"
+                                                      Variant="Variant.Outlined"
+                                                      ReadOnly="true" />
+                                    }
+                                    else
+                                    {
+                                        <MudSelect @bind-Value="updateUserModel.UserRoleId"
+                                                  For="@(() => updateUserModel.UserRoleId)"
                                                   Label="Vloga"
                                                   Variant="Variant.Outlined"
-                                                  ReadOnly="true" />
+                                                  Required="true">
+                                            @if (UserRoles != null)
+                                            {
+                                                @foreach (var role in UserRoles)
+                                                {
+                                                    <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+                                    }
                                 }
                                 else
                                 {
-                                    <MudSelect @bind-Value="updateUserModel.UserRoleId"
-                                              For="@(() => updateUserModel.UserRoleId)"
+                                    <MudSelect @bind-Value="createUserModel.UserRoleId"
+                                              For="@(() => createUserModel.UserRoleId)"
                                               Label="Vloga"
                                               Variant="Variant.Outlined"
                                               Required="true">
@@ -111,22 +130,6 @@
                                         }
                                     </MudSelect>
                                 }
-                            }
-                            else
-                            {
-                                <MudSelect @bind-Value="createUserModel.UserRoleId"
-                                          For="@(() => createUserModel.UserRoleId)"
-                                          Label="Vloga"
-                                          Variant="Variant.Outlined"
-                                          Required="true">
-                                    @if (UserRoles != null)
-                                    {
-                                        @foreach (var role in UserRoles)
-                                        {
-                                            <MudSelectItem Value="@role.Id">@role.Name</MudSelectItem>
-                                        }
-                                    }
-                                </MudSelect>
                             }
 
                             @if (!IsEdit)
@@ -157,17 +160,20 @@
                                 </MudStack>
                             }
 
-                            @if (IsEdit)
+                            @if (!IsProfileMode)
                             {
-                                <MudCheckBox @bind-Value="updateUserModel.IsActive"
-                                            Label="Aktiven uporabnik"
-                                            Color="Color.Primary" />
-                            }
-                            else
-                            {
-                                <MudCheckBox @bind-Value="createUserModel.IsActive"
-                                            Label="Aktiven uporabnik"
-                                            Color="Color.Primary" />
+                                @if (IsEdit)
+                                {
+                                    <MudCheckBox @bind-Value="updateUserModel.IsActive"
+                                                Label="Aktiven uporabnik"
+                                                Color="Color.Primary" />
+                                }
+                                else
+                                {
+                                    <MudCheckBox @bind-Value="createUserModel.IsActive"
+                                                Label="Aktiven uporabnik"
+                                                Color="Color.Primary" />
+                                }
                             }
 
                             <ValidationSummary />
@@ -194,6 +200,7 @@
     [Parameter] public UserDto? User { get; set; }
     [Parameter] public List<UserRoleDto>? UserRoles { get; set; }
     [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public bool IsProfileMode { get; set; }
     [Parameter] public EventCallback<bool> OnResult { get; set; }
     
     [CascadingParameter]
@@ -291,5 +298,13 @@
     private async Task HandleCancel()
     {
         await OnResult.InvokeAsync(false);
+    }
+    
+    private string GetDialogTitle()
+    {
+        if (IsProfileMode)
+            return "Uredi profil";
+        
+        return IsEdit ? "Uredi uporabnika" : "Dodaj uporabnika";
     }
 }
