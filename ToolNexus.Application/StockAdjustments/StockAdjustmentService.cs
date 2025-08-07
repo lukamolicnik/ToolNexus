@@ -43,7 +43,9 @@ public class StockAdjustmentService : IStockAdjustmentService
             request.PageSize,
             request.ToolId,
             request.AdjustmentType,
-            request.SearchTerm
+            request.SearchTerm,
+            request.StartDate,
+            request.EndDate
         );
 
         return new PagedStockAdjustmentDto

@@ -60,10 +60,12 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
     public async Task<List<StockAdjustment>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
+        // Adjust end date to include the entire day
+        var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
-            .Where(sa => sa.AdjustedAt >= startDate && sa.AdjustedAt <= endDate)
+            .Where(sa => sa.AdjustedAt >= startDate && sa.AdjustedAt <= adjustedEndDate)
             .OrderBy(sa => sa.AdjustedAt)
             .ToListAsync();
     }
@@ -71,12 +73,14 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
     public async Task<List<StockAdjustment>> GetDecreaseAdjustmentsByDateRangeAsync(DateTime startDate, DateTime endDate)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
+        // Adjust end date to include the entire day
+        var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.AdjustmentType == StockAdjustmentType.Decrease &&
                        sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= endDate)
+                       sa.AdjustedAt <= adjustedEndDate)
             .OrderBy(sa => sa.AdjustedAt)
             .ToListAsync();
     }
@@ -84,12 +88,14 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
     public async Task<List<StockAdjustment>> GetByToolIdAndDateRangeAsync(int toolId, DateTime startDate, DateTime endDate)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
+        // Adjust end date to include the entire day
+        var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.ToolId == toolId &&
                        sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= endDate)
+                       sa.AdjustedAt <= adjustedEndDate)
             .OrderBy(sa => sa.AdjustedAt)
             .ToListAsync();
     }
@@ -97,17 +103,19 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
     public async Task<List<StockAdjustment>> GetByCategoryAndDateRangeAsync(int categoryId, DateTime startDate, DateTime endDate)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
+        // Adjust end date to include the entire day
+        var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.Tool.ToolCategoryId == categoryId &&
                        sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= endDate)
+                       sa.AdjustedAt <= adjustedEndDate)
             .OrderBy(sa => sa.AdjustedAt)
             .ToListAsync();
     }
 
-    public async Task<(List<StockAdjustment> items, int totalCount)> GetPagedAsync(int page, int pageSize, int? toolId = null, StockAdjustmentType? adjustmentType = null, string? searchTerm = null)
+    public async Task<(List<StockAdjustment> items, int totalCount)> GetPagedAsync(int page, int pageSize, int? toolId = null, StockAdjustmentType? adjustmentType = null, string? searchTerm = null, DateTime? startDate = null, DateTime? endDate = null)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
         
@@ -135,6 +143,18 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
                 sa.Reason.Contains(searchTerm) ||
                 sa.Notes.Contains(searchTerm) ||
                 sa.AdjustedBy.Contains(searchTerm));
+        }
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(sa => sa.AdjustedAt >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            // Adjust end date to include the entire day
+            var adjustedEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(sa => sa.AdjustedAt <= adjustedEndDate);
         }
 
         // Get total count

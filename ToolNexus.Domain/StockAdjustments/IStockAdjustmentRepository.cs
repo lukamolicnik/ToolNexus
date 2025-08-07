@@ -11,5 +11,5 @@ public interface IStockAdjustmentRepository
     Task<List<StockAdjustment>> GetDecreaseAdjustmentsByDateRangeAsync(DateTime startDate, DateTime endDate);
     Task<List<StockAdjustment>> GetByToolIdAndDateRangeAsync(int toolId, DateTime startDate, DateTime endDate);
     Task<List<StockAdjustment>> GetByCategoryAndDateRangeAsync(int categoryId, DateTime startDate, DateTime endDate);
-    Task<(List<StockAdjustment> items, int totalCount)> GetPagedAsync(int page, int pageSize, int? toolId = null, StockAdjustmentType? adjustmentType = null, string? searchTerm = null);
+    Task<(List<StockAdjustment> items, int totalCount)> GetPagedAsync(int page, int pageSize, int? toolId = null, StockAdjustmentType? adjustmentType = null, string? searchTerm = null, DateTime? startDate = null, DateTime? endDate = null);
 }

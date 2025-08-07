@@ -55,7 +55,11 @@ namespace ToolNexus.Infrastructure.Repositories
                 query = query.Where(a => a.Timestamp >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(a => a.Timestamp <= endDate.Value);
+            {
+                // Adjust end date to include the entire day
+                var adjustedEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(a => a.Timestamp <= adjustedEndDate);
+            }
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
@@ -105,8 +109,10 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task<IEnumerable<AuditTrail>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
+            // Adjust end date to include the entire day
+            var adjustedEndDate = endDate.Date.AddDays(1).AddTicks(-1);
             return await context.AuditTrails
-                .Where(a => a.Timestamp >= startDate && a.Timestamp <= endDate)
+                .Where(a => a.Timestamp >= startDate && a.Timestamp <= adjustedEndDate)
                 .OrderByDescending(a => a.Timestamp)
                 .ToListAsync();
         }

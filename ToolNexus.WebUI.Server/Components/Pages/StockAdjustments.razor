@@ -71,14 +71,13 @@
                                   Variant="Variant.Outlined"
                                   Dense="true" />
                 </MudItem>
-                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="ResetFilters"
-                               FullWidth="true"
-                               Class="mt-2">
-                        Počisti filtre
-                    </MudButton>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudDateRangePicker @bind-DateRange="dateRange"
+                                        Label="Obdobje"
+                                        Clearable="true"
+                                        @bind-DateRange:after="OnFilterChanged"
+                                        Variant="Variant.Outlined"
+                                        Dense="true" />
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -189,6 +188,7 @@
     private int? selectedToolId;
     private StockAdjustmentType? selectedType;
     private string searchTerm = "";
+    private DateRange? dateRange;
 
     protected override async Task OnInitializedAsync()
     {
@@ -219,7 +219,9 @@
                 PageSize = state.PageSize,
                 ToolId = selectedToolId,
                 AdjustmentType = selectedType,
-                SearchTerm = string.IsNullOrEmpty(searchTerm) ? null : searchTerm
+                SearchTerm = string.IsNullOrEmpty(searchTerm) ? null : searchTerm,
+                StartDate = dateRange?.Start,
+                EndDate = dateRange?.End
             };
 
             pagedResult = await StockAdjustmentService.GetPagedAsync(request);
@@ -246,13 +248,6 @@
         await table.ReloadServerData();
     }
 
-    private async Task ResetFilters()
-    {
-        selectedToolId = null;
-        selectedType = null;
-        searchTerm = string.Empty;
-        await table.ReloadServerData();
-    }
 
     public void Dispose()
     {
