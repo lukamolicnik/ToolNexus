@@ -51,7 +51,10 @@ namespace ToolNexus.Application.DeliveryNotes
         public async Task<DeliveryNoteDto> CreateDeliveryNoteAsync(CreateDeliveryNoteDto createDto)
         {
             // Validate supplier exists
-            var supplier = await _supplierRepository.GetByIdAsync(createDto.SupplierId);
+            if (!createDto.SupplierId.HasValue)
+                throw new InvalidOperationException("Dobavitelj mora biti izbran.");
+                
+            var supplier = await _supplierRepository.GetByIdAsync(createDto.SupplierId.Value);
             if (supplier == null)
                 throw new InvalidOperationException($"Dobavitelj z ID {createDto.SupplierId} ne obstaja.");
 
@@ -64,7 +67,7 @@ namespace ToolNexus.Application.DeliveryNotes
             {
                 DeliveryNoteNumber = createDto.DeliveryNoteNumber,
                 DeliveryDate = createDto.DeliveryDate,
-                SupplierId = createDto.SupplierId,
+                SupplierId = createDto.SupplierId.Value,
                 Notes = createDto.Notes
             };
 

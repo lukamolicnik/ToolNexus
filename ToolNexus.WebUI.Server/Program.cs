@@ -98,9 +98,10 @@ app.MapGet("/logout", async (HttpContext context) =>
 // Seed initial data
 using (var scope = app.Services.CreateScope())
 {
+    //var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    //await context.Database.EnsureCreatedAsync();
+
     await ToolNexus.Infrastructure.DataSeeder.SeedDataAsync(scope.ServiceProvider);
-    
-    // BCrypt migracija ni več potrebna, ker DataSeeder že uporablja BCrypt
 }
 
 app.Run();

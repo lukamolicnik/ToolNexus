@@ -130,9 +130,12 @@
                             <MudText>@toolContext.Item.MinimumStock / @toolContext.Item.CriticalStock</MudText>
                         </CellTemplate>
                     </TemplateColumn>
-                    <TemplateColumn T="ToolDto" Title="Ustvaril">
+                    <TemplateColumn T="ToolDto" Title="Status">
                         <CellTemplate Context="toolContext">
-                            <MudText>@(toolContext.Item.CreatedBy ?? "-")</MudText>
+                            <MudChip T="string" Size="Size.Small" 
+                                     Color="@(toolContext.Item.IsActive ? Color.Success : Color.Error)">
+                                @(toolContext.Item.IsActive ? "Aktivno" : "Neaktivno")
+                            </MudChip>
                         </CellTemplate>
                     </TemplateColumn>
                     <TemplateColumn T="ToolDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt" Filterable="true">

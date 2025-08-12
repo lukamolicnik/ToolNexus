@@ -43,7 +43,7 @@ namespace ToolNexus.Application.Suppliers
                 Email = createDto.Email,
                 Phone = createDto.Phone,
                 Address = createDto.Address,
-                IsActive = true
+                IsActive = createDto.IsActive
             };
 
             var created = await _supplierRepository.AddAsync(supplier);
@@ -98,8 +98,10 @@ namespace ToolNexus.Application.Suppliers
                 IsActive = supplier.IsActive,
                 CreatedAt = supplier.CreatedAt,
                 CreatedBy = supplier.CreatedBy?.ToString(),
+                CreatedByName = supplier.CreatedByUser != null ? $"{supplier.CreatedByUser.FirstName} {supplier.CreatedByUser.LastName}" : null,
                 UpdatedAt = supplier.UpdatedAt,
-                UpdatedBy = supplier.UpdatedBy?.ToString()
+                UpdatedBy = supplier.UpdatedBy?.ToString(),
+                UpdatedByName = supplier.UpdatedByUser != null ? $"{supplier.UpdatedByUser.FirstName} {supplier.UpdatedByUser.LastName}" : null
             };
         }
     }

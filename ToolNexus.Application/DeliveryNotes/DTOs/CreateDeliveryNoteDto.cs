@@ -4,7 +4,7 @@ namespace ToolNexus.Application.DeliveryNotes.DTOs
     {
         public string DeliveryNoteNumber { get; set; } = string.Empty;
         public DateTime DeliveryDate { get; set; }
-        public int SupplierId { get; set; }
+        public int? SupplierId { get; set; }
         public string? Notes { get; set; }
         public List<CreateDeliveryNoteItemDto> Items { get; set; } = new();
     }

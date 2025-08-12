@@ -48,15 +48,16 @@
                                                        Variant="Variant.Outlined"
                                                        Required="true" />
 
-                                        <MudSelect @bind-Value="model.SupplierId"
+                                        <MudSelect T="int?" @bind-Value="model.SupplierId"
                                                    Label="Dobavitelj"
                                                    Variant="Variant.Outlined"
-                                                   Required="true">
+                                                   Required="true"
+                                                   Placeholder="Izberite dobavitelja...">
                                             @if (suppliers != null)
                                             {
                                                 @foreach (var supplier in suppliers)
                                                 {
-                                                    <MudSelectItem Value="@supplier.Id">@supplier.Name</MudSelectItem>
+                                                    <MudSelectItem Value="@((int?)supplier.Id)">@supplier.Name</MudSelectItem>
                                                 }
                                             }
                                         </MudSelect>
@@ -227,7 +228,7 @@
         try
         {
             var suppliersTask = SupplierService.GetActiveSuppliersAsync();
-            var toolsTask = ToolService.GetAllToolsAsync();
+            var toolsTask = ToolService.GetActiveToolsAsync();
             
             await Task.WhenAll(suppliersTask, toolsTask);
             

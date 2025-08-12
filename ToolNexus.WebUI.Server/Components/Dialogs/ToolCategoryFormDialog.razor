@@ -44,7 +44,7 @@
                                 </MudChip>
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField Value="@Category?.CreatedBy" 
+                                <MudTextField Value="@(Category?.CreatedByName ?? $"ID: {Category?.CreatedBy}")" 
                                               Label="Ustvaril" 
                                               Variant="Variant.Outlined"
                                               ReadOnly="true" />
@@ -58,7 +58,7 @@
                             @if (Category?.UpdatedAt.HasValue == true)
                             {
                                 <MudItem xs="12" sm="6">
-                                    <MudTextField Value="@Category?.UpdatedBy" 
+                                    <MudTextField Value="@(Category?.UpdatedByName ?? $"ID: {Category?.UpdatedBy}")" 
                                                   Label="Posodobil" 
                                                   Variant="Variant.Outlined"
                                                   ReadOnly="true" />

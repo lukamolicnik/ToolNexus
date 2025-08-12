@@ -21,6 +21,12 @@ namespace ToolNexus.Application.Tools
             return tools.Select(MapToDto).ToList();
         }
 
+        public async Task<List<ToolDto>> GetActiveToolsAsync()
+        {
+            var tools = await _toolRepository.GetActiveToolsAsync();
+            return tools.Select(MapToDto).ToList();
+        }
+
         public async Task<ToolDto> GetToolByIdAsync(int id)
         {
             var tool = await _toolRepository.GetByIdAsync(id);
@@ -45,6 +51,7 @@ namespace ToolNexus.Application.Tools
                 MinimumStock = toolDto.MinimumStock,
                 CriticalStock = toolDto.CriticalStock,
                 CurrentStock = 0,
+                IsActive = toolDto.IsActive,
                 CreatedBy = int.TryParse(userId, out var userIdInt) ? userIdInt : null,
                 UpdatedBy = int.TryParse(userId, out var userIdInt2) ? userIdInt2 : null,
                 CreatedAt = DateTime.Now,
@@ -66,6 +73,7 @@ namespace ToolNexus.Application.Tools
             tool.MinimumStock = toolDto.MinimumStock;
             tool.CriticalStock = toolDto.CriticalStock;
             tool.ToolCategoryId = toolDto.ToolCategoryId;
+            tool.IsActive = toolDto.IsActive;
             tool.UpdatedBy = int.TryParse(userId, out var userIdInt) ? userIdInt : null;
 
             await _toolRepository.UpdateAsync(tool);
@@ -163,12 +171,15 @@ namespace ToolNexus.Application.Tools
                 CurrentStock = tool.CurrentStock,
                 MinimumStock = tool.MinimumStock,
                 CriticalStock = tool.CriticalStock,
+                IsActive = tool.IsActive,
                 IsBelowMinimum = tool.IsBelowMinimum,
                 IsCritical = tool.IsCritical,
                 CreatedAt = tool.CreatedAt,
                 CreatedBy = tool.CreatedBy?.ToString(),
+                CreatedByName = tool.CreatedByUser != null ? $"{tool.CreatedByUser.FirstName} {tool.CreatedByUser.LastName}" : null,
                 UpdatedAt = tool.UpdatedAt,
-                UpdatedBy = tool.UpdatedBy?.ToString()
+                UpdatedBy = tool.UpdatedBy?.ToString(),
+                UpdatedByName = tool.UpdatedByUser != null ? $"{tool.UpdatedByUser.FirstName} {tool.UpdatedByUser.LastName}" : null
             };
         }
     }

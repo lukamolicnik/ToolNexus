@@ -232,7 +232,7 @@
             
             // Load categories and tools separately to avoid DbContext conflicts
             categories = await ToolCategoryService.GetActiveAsync();
-            tools = await ToolService.GetAllToolsAsync();
+            tools = await ToolService.GetActiveToolsAsync();
             filteredTools = tools;
         }
         catch (Exception ex)

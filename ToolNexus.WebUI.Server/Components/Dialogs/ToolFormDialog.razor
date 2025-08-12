@@ -5,6 +5,7 @@
 @using ToolNexus.Application.Tools
 @using ToolNexus.Application.Tools.DTOs
 @using ToolNexus.WebUI.Server.Services
+@using ToolNexus.WebUI.Server.Components.Shared
 @inject ISnackbar Snackbar
 @inject IToolService ToolService
 @inject IToolCategoryService CategoryService
@@ -36,9 +37,14 @@
                                     }
                                     <MudTextField Value="@(Tool?.CurrentStock)" Label="Trenutna zaloga" Variant="Variant.Outlined" ReadOnly="true" />
                                     <MudTextField Value="@($"{Tool?.MinimumStock} / {Tool?.CriticalStock}")" Label="Min/Krit zaloga" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudChip T="string" Color="@(Tool?.IsActive == true ? Color.Success : Color.Error)" Size="Size.Small">
+                                            @(Tool?.IsActive == true ? "Aktivno" : "Neaktivno")
+                                        </MudChip>
+                                    </MudStack>
                                     <MudGrid>
                                         <MudItem xs="12" sm="6">
-                                            <MudTextField Value="@(Tool?.CreatedBy)" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                                            <MudTextField Value="@(Tool?.CreatedByName ?? $"ID: {Tool?.CreatedBy}")" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
                                         </MudItem>
                                         <MudItem xs="12" sm="6">
                                             <MudTextField Value="@(Tool?.CreatedAt.ToString("dd.MM.yyyy HH:mm"))" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
@@ -46,7 +52,7 @@
                                         @if (!string.IsNullOrEmpty(Tool?.UpdatedBy))
                                         {
                                             <MudItem xs="12" sm="6">
-                                                <MudTextField Value="@(Tool?.UpdatedBy)" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
+                                                <MudTextField Value="@(Tool?.UpdatedByName ?? $"ID: {Tool?.UpdatedBy}")" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6">
                                                 <MudTextField Value="@(Tool?.UpdatedAt?.ToString("dd.MM.yyyy HH:mm"))" Label="Posodobljeno" Variant="Variant.Outlined" ReadOnly="true" />
@@ -97,6 +103,18 @@
                             
                             @if (!IsEdit)
                             {
+                                <MudExpansionPanels Elevation="1" Class="mb-3">
+                                    <MudExpansionPanel Text="Skeniranje QR kode" Icon="@Icons.Material.Filled.QrCodeScanner">
+                                        <QRCodeScanner OnCodeScanned="HandleQrCodeScanned" />
+                                        @if (!string.IsNullOrEmpty(scannedCode))
+                                        {
+                                            <MudAlert Severity="Severity.Info" Class="mt-2">
+                                                Skenirana koda: @scannedCode
+                                            </MudAlert>
+                                        }
+                                    </MudExpansionPanel>
+                                </MudExpansionPanels>
+                                
                                 <MudTextField @bind-Value="toolModel.Code"
                                               For="@(() => toolModel.Code)"
                                               Label="Koda"
@@ -141,6 +159,8 @@
                                         }
                                     }
                                 </MudSelect>
+
+                                <MudSwitch @bind-Value="isActiveForNew" Color="Color.Primary" Label="Aktivno" />
                             }
                             else
                             {
@@ -187,6 +207,8 @@
                                         }
                                     }
                                 </MudSelect>
+
+                                <MudSwitch @bind-Value="updateModel.IsActive" Color="Color.Primary" Label="Aktivno" />
                             }
 
 
@@ -209,6 +231,7 @@
     </div>
 }
 
+
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public ToolDto? Tool { get; set; }
@@ -225,6 +248,8 @@
     private bool isSubmitting = false;
     private List<ToolCategoryDto>? categories;
     private string? qrCodeImage;
+    private bool isActiveForNew = true;
+    private string? scannedCode;
     
     protected override async Task OnParametersSetAsync()
     {
@@ -245,7 +270,8 @@
                         Description = Tool.Description,
                         MinimumStock = Tool.MinimumStock,
                         CriticalStock = Tool.CriticalStock,
-                        ToolCategoryId = Tool.ToolCategoryId
+                        ToolCategoryId = Tool.ToolCategoryId,
+                        IsActive = Tool.IsActive
                     };
                     editContext = new EditContext(updateModel);
                     
@@ -256,6 +282,8 @@
                 {
                     toolModel = new CreateToolDto();
                     editContext = new EditContext(toolModel);
+                    isActiveForNew = true; // Reset to default
+                    scannedCode = null; // Reset scanned code
                     
                     // Load categories only when creating new tool
                     await LoadCategories();
@@ -307,6 +335,8 @@
             }
             else
             {
+                // Set IsActive from the switch value before creating
+                toolModel.IsActive = isActiveForNew;
                 await ToolService.CreateToolAsync(toolModel, userId);
                 Snackbar.Add("Orodje je bilo uspešno ustvarjeno.", Severity.Success);
             }
@@ -357,6 +387,16 @@
             ";
 
             await JS.InvokeVoidAsync("printContent", printContent);
+        }
+    }
+    
+    private void HandleQrCodeScanned(string code)
+    {
+        if (!string.IsNullOrEmpty(code))
+        {
+            toolModel.Code = code;
+            scannedCode = code;
+            StateHasChanged();
         }
     }
 }

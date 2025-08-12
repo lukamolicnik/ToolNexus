@@ -41,7 +41,7 @@
             </MudItem>
         </MudGrid>
 
-        @if (suppliers == null)
+        @if (filteredSuppliers == null)
         {
             <MudPaper Elevation="2" Class="pa-8">
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
@@ -50,7 +50,7 @@
                 </MudStack>
             </MudPaper>
         }
-        else if (suppliers.Count == 0)
+        else if (suppliers?.Count == 0 && !dateFilter.HasValue)
         {
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
                 <MudStack Spacing="2" AlignItems="AlignItems.Center">
@@ -65,7 +65,7 @@
             <EntityDataGrid TItem="SupplierDto"
                            Title="Seznam dobaviteljev"
                            Icon="@Icons.Material.Filled.LocalShipping"
-                           Items="suppliers"
+                           Items="filteredSuppliers"
                            Loading="isLoading"
                            OnView="ViewSupplier"
                            OnEdit="EditSupplier"
@@ -87,10 +87,13 @@
                             </MudChip>
                         </CellTemplate>
                     </TemplateColumn>
-                    <TemplateColumn T="SupplierDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt">
+                    <TemplateColumn T="SupplierDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt" Filterable="true">
                         <CellTemplate Context="supplierContext">
-                            <MudText>@supplierContext.Item.CreatedAt.ToString("dd.MM.yyyy")</MudText>
+                            <MudText>@supplierContext.Item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</MudText>
                         </CellTemplate>
+                        <FilterTemplate>
+                            <MudDatePicker @bind-Date="dateFilter" @bind-Date:after="OnDateFilterChanged" Clearable="true" />
+                        </FilterTemplate>
                     </TemplateColumn>
                 </ColumnsTemplate>
             </EntityDataGrid>
@@ -123,6 +126,7 @@
 
 @code {
     private List<SupplierDto>? suppliers;
+    private List<SupplierDto>? filteredSuppliers;
     private SupplierDto? selectedSupplier;
     private bool isLoading = false;
     private bool showSupplierDialog = false;
@@ -131,6 +135,7 @@
     private bool showDeleteDialog = false;
     private string deleteMessage = string.Empty;
     private SupplierDto? supplierToDelete;
+    private DateTime? dateFilter;
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,11 +148,13 @@
         {
             isLoading = true;
             suppliers = await SupplierService.GetAllSuppliersAsync();
+            ApplyDateFilter();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Napaka pri nalaganju dobaviteljev: {ex.Message}", Severity.Error);
             suppliers = new List<SupplierDto>();
+            filteredSuppliers = new List<SupplierDto>();
         }
         finally
         {
@@ -239,5 +246,29 @@
             }
         }
         supplierToDelete = null;
+    }
+
+    private void OnDateFilterChanged()
+    {
+        ApplyDateFilter();
+        StateHasChanged();
+    }
+    
+    private void ApplyDateFilter()
+    {
+        if (suppliers == null)
+        {
+            filteredSuppliers = new List<SupplierDto>();
+            return;
+        }
+
+        if (dateFilter.HasValue)
+        {
+            filteredSuppliers = suppliers.Where(s => s.CreatedAt.Date == dateFilter.Value.Date).ToList();
+        }
+        else
+        {
+            filteredSuppliers = suppliers.ToList();
+        }
     }
 }

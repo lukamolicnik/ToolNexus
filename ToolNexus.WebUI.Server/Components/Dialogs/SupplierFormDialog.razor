@@ -29,7 +29,7 @@
                         </MudStack>
                         <MudGrid>
                             <MudItem xs="12" sm="6">
-                                <MudTextField Value="@Supplier?.CreatedBy" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
+                                <MudTextField Value="@(Supplier?.CreatedByName ?? $"ID: {Supplier?.CreatedBy}")" Label="Ustvaril" Variant="Variant.Outlined" ReadOnly="true" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
                                 <MudTextField Value="@Supplier?.CreatedAt.ToString("dd.MM.yyyy HH:mm")" Label="Ustvarjeno" Variant="Variant.Outlined" ReadOnly="true" />
@@ -37,7 +37,7 @@
                             @if (!string.IsNullOrEmpty(Supplier?.UpdatedBy))
                             {
                                 <MudItem xs="12" sm="6">
-                                    <MudTextField Value="@Supplier?.UpdatedBy" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
+                                    <MudTextField Value="@(Supplier?.UpdatedByName ?? $"ID: {Supplier?.UpdatedBy}")" Label="Posodobil" Variant="Variant.Outlined" ReadOnly="true" />
                                 </MudItem>
                                 <MudItem xs="12" sm="6">
                                     <MudTextField Value="@Supplier?.UpdatedAt?.ToString("dd.MM.yyyy HH:mm")" Label="Posodobljeno" Variant="Variant.Outlined" ReadOnly="true" />
@@ -114,6 +114,8 @@
                                               Label="Naslov"
                                               Variant="Variant.Outlined"
                                               Lines="3" />
+                                              
+                                <MudSwitch @bind-Value="isActiveForNew" Color="Color.Primary" Label="Aktivno" />
                             }
 
                             @if (IsEdit)
@@ -155,6 +157,7 @@
     private EditContext editContext = default!;
     private bool isSubmitting = false;
     private bool isActive = true;
+    private bool isActiveForNew = true;
     
     protected override void OnParametersSet()
     {
@@ -178,6 +181,7 @@
             {
                 createModel = new CreateSupplierDto();
                 editContext = new EditContext(createModel);
+                isActiveForNew = true; // Reset to default
             }
         }
     }
@@ -203,6 +207,8 @@
             }
             else
             {
+                // Set IsActive from the switch value before creating
+                createModel.IsActive = isActiveForNew;
                 await SupplierService.CreateSupplierAsync(createModel);
                 Snackbar.Add("Dobavitelj je bil uspešno ustvarjen.", Severity.Success);
             }

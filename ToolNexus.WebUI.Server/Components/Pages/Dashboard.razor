@@ -277,8 +277,8 @@
     {
         try
         {
-            // Fetch all tools
-            var tools = await ToolService.GetAllToolsAsync();
+            // Fetch only active tools
+            var tools = await ToolService.GetActiveToolsAsync();
             totalTools = tools.Count;
             availableTools = tools.Count(t => t.CurrentStock > 0);
             belowMinimumTools = tools.Count(t => t.CurrentStock > 0 && t.CurrentStock <= t.MinimumStock);

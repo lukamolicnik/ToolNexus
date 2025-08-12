@@ -9,8 +9,10 @@ public class ToolCategoryDto
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
+    public string? CreatedByName { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
+    public string? UpdatedByName { get; set; }
     public int ToolCount { get; set; }
 }
 

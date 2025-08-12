@@ -18,5 +18,7 @@ namespace ToolNexus.Application.Tools.DTOs
         public int CriticalStock { get; set; } = 0;
 
         public int? ToolCategoryId { get; set; }
+        
+        public bool IsActive { get; set; } = true;
     }
 }

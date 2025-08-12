@@ -110,8 +110,10 @@ public class ToolCategoryService : IToolCategoryService
             IsActive = category.IsActive,
             CreatedAt = category.CreatedAt,
             CreatedBy = category.CreatedBy?.ToString(),
+            CreatedByName = category.CreatedByUser != null ? $"{category.CreatedByUser.FirstName} {category.CreatedByUser.LastName}" : null,
             UpdatedAt = category.UpdatedAt,
             UpdatedBy = category.UpdatedBy?.ToString(),
+            UpdatedByName = category.UpdatedByUser != null ? $"{category.UpdatedByUser.FirstName} {category.UpdatedByUser.LastName}" : null,
             ToolCount = category.Tools?.Count ?? 0
         };
     }

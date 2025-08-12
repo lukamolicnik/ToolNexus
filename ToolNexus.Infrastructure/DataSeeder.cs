@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
@@ -12,55 +13,67 @@ namespace ToolNexus.Infrastructure
         public static async Task SeedDataAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
-            var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
             
-            using var context = await contextFactory.CreateDbContextAsync();
+            // Create context without audit interceptor for seeding
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            
+            using var context = new ApplicationDbContext(optionsBuilder.Options);
 
             try
             {
                 // Zagotovi, da baza obstaja
                 //await context.Database.EnsureCreatedAsync();
 
+                UserRole adminRole, supervisorRole, workerRole;
+
                 // Preveri, če že obstajajo role
-                if (await context.UserRoles.AnyAsync())
+                if (!await context.UserRoles.AnyAsync())
                 {
-                    logger.LogInformation("Vloge že obstajajo, preskačem seed podatke.");
-                    return;
+                    logger.LogInformation("Ustvarjam vloge...");
+                    
+                    adminRole = new UserRole
+                    {
+                        Name = "Administrator",
+                        Code = "ADMIN",
+                        Description = "Sistem administrator",
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
+                    
+                    supervisorRole = new UserRole
+                    {
+                        Name = "Nadzornik Proizvodnje",
+                        Code = "SUPERVISOR",
+                        Description = "Nadzornik proizvodnje",
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
+
+                    workerRole = new UserRole
+                    {
+                        Name = "Delavec",
+                        Code = "WORKER",
+                        Description = "Osnovni delavec",
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
+
+                    context.UserRoles.Add(adminRole);
+                    context.UserRoles.Add(supervisorRole);
+                    context.UserRoles.Add(workerRole);
+
+                    await context.SaveChangesAsync();
                 }
-
-                var adminRole = new UserRole
+                else
                 {
-                    Name = "Administrator",
-                    Code = "ADMIN",
-                    Description = "Sistem administrator",
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-                
-                var supervisorRole = new UserRole
-                {
-                    Name = "Nadzornik Proizvodnje",
-                    Code = "SUPERVISOR",
-                    Description = "Nadzornik proizvodnje",
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
-                var workerRole = new UserRole
-                {
-                    Name = "Delavec",
-                    Code = "WORKER",
-                    Description = "Osnovni delavec",
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
-                context.UserRoles.Add(adminRole);
-                context.UserRoles.Add(supervisorRole);
-                context.UserRoles.Add(workerRole);
-
-                await context.SaveChangesAsync();
+                    logger.LogInformation("Vloge že obstajajo, pridobivam obstoječe...");
+                    adminRole = await context.UserRoles.FirstAsync(r => r.Code == "ADMIN");
+                    supervisorRole = await context.UserRoles.FirstAsync(r => r.Code == "SUPERVISOR");
+                    workerRole = await context.UserRoles.FirstAsync(r => r.Code == "WORKER");
+                }
 
 
                 // Preveri, če že obstajajo uporabniki

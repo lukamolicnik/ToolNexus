@@ -5,6 +5,7 @@ namespace ToolNexus.Application.Tools
     public interface IToolService
     {
         Task<List<ToolDto>> GetAllToolsAsync();
+        Task<List<ToolDto>> GetActiveToolsAsync();
         Task<ToolDto> GetToolByIdAsync(int id);
         Task<ToolDto> CreateToolAsync(CreateToolDto toolDto, string userId);
         Task<ToolDto> UpdateToolAsync(int id, UpdateToolDto toolDto, string userId);

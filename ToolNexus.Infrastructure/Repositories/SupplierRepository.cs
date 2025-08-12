@@ -15,19 +15,28 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task<Supplier?> GetByIdAsync(int id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Suppliers.FirstOrDefaultAsync(s => s.Id == id);
+            return await context.Suppliers
+                .Include(s => s.CreatedByUser)
+                .Include(s => s.UpdatedByUser)
+                .FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task<List<Supplier>> GetAllAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Suppliers.OrderBy(s => s.Name).ToListAsync();
+            return await context.Suppliers
+                .Include(s => s.CreatedByUser)
+                .Include(s => s.UpdatedByUser)
+                .OrderBy(s => s.Name)
+                .ToListAsync();
         }
 
         public async Task<List<Supplier>> GetActiveAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.Suppliers
+                .Include(s => s.CreatedByUser)
+                .Include(s => s.UpdatedByUser)
                 .Where(s => s.IsActive)
                 .OrderBy(s => s.Name)
                 .ToListAsync();

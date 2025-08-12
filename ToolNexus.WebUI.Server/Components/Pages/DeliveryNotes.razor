@@ -40,7 +40,7 @@
             </MudItem>
         </MudGrid>
 
-        @if (deliveryNotes == null)
+        @if (filteredDeliveryNotes == null)
         {
             <MudPaper Elevation="2" Class="pa-8">
                 <MudStack Spacing="4" AlignItems="AlignItems.Center">
@@ -49,148 +49,101 @@
                 </MudStack>
             </MudPaper>
         }
+        else if (deliveryNotes?.Count == 0 && !deliveryDateFilter.HasValue && !createdDateFilter.HasValue)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="Icons.Material.Filled.Info" Size="Size.Large" />
+                    <MudText Typo="Typo.h6">Ni dobavnic</MudText>
+                    <MudText Typo="Typo.body1">V sistemu trenutno ni registriranih dobavnic.</MudText>
+                </MudStack>
+            </MudAlert>
+        }
         else
         {
-            <MudGrid>
-                <MudItem xs="12" md="6">
-                    <MudPaper Elevation="2" Class="pa-4">
-                        <MudText Typo="Typo.h6" Class="mb-4">Seznam dobavnic</MudText>
-                        
-                        @if (deliveryNotes.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info">
-                                V sistemu trenutno ni dobavnic.
-                            </MudAlert>
-                        }
-                        else
-                        {
-                            <MudTextField @bind-Value="searchString" 
-                                          Placeholder="Išči po številki, dobavitelju..." 
-                                          Adornment="Adornment.Start" 
-                                          AdornmentIcon="@Icons.Material.Filled.Search"
-                                          Immediate="true"
-                                          DebounceInterval="300"
-                                          Class="mb-4" />
-                            
-                            <MudList T="DeliveryNoteDto" @bind-SelectedValue="selectedDeliveryNote" 
-                                     Color="Color.Primary">
-                                @foreach (var note in FilteredDeliveryNotes)
-                                {
-                                    <MudListItem T="DeliveryNoteDto" Value="@note" 
-                                                 OnClick="@(() => SelectDeliveryNote(note))">
-                                        <MudStack Spacing="0">
-                                            <MudStack Row="true" Justify="Justify.SpaceBetween">
-                                                <MudText Typo="Typo.subtitle1">@note.DeliveryNoteNumber</MudText>
-                                                <MudText Typo="Typo.body2">@note.TotalAmount.ToString("C")</MudText>
-                                            </MudStack>
-                                            <MudText Typo="Typo.body2">@note.SupplierName</MudText>
-                                            <MudText Typo="Typo.caption">@note.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
-                                        </MudStack>
-                                    </MudListItem>
-                                    <MudDivider />
-                                }
-                            </MudList>
-                        }
-                    </MudPaper>
-                </MudItem>
+            <MudPaper Elevation="2">
+                <MudToolBar>
+                    <MudIcon Icon="@Icons.Material.Filled.Receipt" />
+                    <MudText Typo="Typo.h6" Class="ml-3">Seznam dobavnic</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString" 
+                                  Placeholder="Iskanje..." 
+                                  Adornment="Adornment.Start" 
+                                  AdornmentIcon="@Icons.Material.Filled.Search" 
+                                  IconSize="Size.Medium" 
+                                  Immediate="true"
+                                  Class="mt-0" />
+                </MudToolBar>
                 
-                <MudItem xs="12" md="6">
-                    <MudPaper Elevation="2" Class="pa-4">
-                        <MudText Typo="Typo.h6" Class="mb-4">Podrobnosti dobavnice</MudText>
-                        
-                        @if (selectedDeliveryNote == null)
-                        {
-                            <MudAlert Severity="Severity.Info">
-                                Izberite dobavnico za prikaz podrobnosti.
-                            </MudAlert>
-                        }
-                        else
-                        {
-                            <MudStack Spacing="3">
-                                <MudGrid>
-                                    <MudItem xs="6">
-                                        <MudText Typo="Typo.caption">Številka dobavnice</MudText>
-                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.DeliveryNoteNumber</MudText>
-                                    </MudItem>
-                                    <MudItem xs="6">
-                                        <MudText Typo="Typo.caption">Datum</MudText>
-                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
-                                    </MudItem>
-                                    <MudItem xs="12">
-                                        <MudText Typo="Typo.caption">Dobavitelj</MudText>
-                                        <MudText Typo="Typo.body1">@selectedDeliveryNote.SupplierName</MudText>
-                                    </MudItem>
-                                    @if (!string.IsNullOrEmpty(selectedDeliveryNote.Notes))
-                                    {
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.caption">Opombe</MudText>
-                                            <MudText Typo="Typo.body1">@selectedDeliveryNote.Notes</MudText>
-                                        </MudItem>
-                                    }
-                                </MudGrid>
-                                
-                                <MudDivider />
-                                
-                                <MudText Typo="Typo.h6">Postavke</MudText>
-                                
-                                @if (selectedDeliveryNoteDetails == null)
-                                {
-                                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                                }
-                                else if (selectedDeliveryNoteDetails.Items.Count == 0)
-                                {
-                                    <MudAlert Severity="Severity.Info">Ta dobavnica nima postavk.</MudAlert>
-                                }
-                                else
-                                {
-                                    <MudSimpleTable Style="overflow-x: auto;">
-                                        <thead>
-                                            <tr>
-                                                <th>Koda</th>
-                                                <th>Orodje</th>
-                                                <th>Količina</th>
-                                                <th>Cena/kos</th>
-                                                <th>Skupaj</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var item in selectedDeliveryNoteDetails.Items)
-                                            {
-                                                <tr>
-                                                    <td>@item.ToolCode</td>
-                                                    <td>@item.ToolName</td>
-                                                    <td>@item.Quantity</td>
-                                                    <td>@item.UnitPrice.ToString("C")</td>
-                                                    <td>@item.TotalPrice.ToString("C")</td>
-                                                </tr>
-                                            }
-                                            <tr>
-                                                <td colspan="4" style="text-align: right;"><strong>Skupaj:</strong></td>
-                                                <td><strong>@selectedDeliveryNoteDetails.TotalAmount.ToString("C")</strong></td>
-                                            </tr>
-                                        </tbody>
-                                    </MudSimpleTable>
-                                }
-                                
-                                <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
-                                    <MudButton Color="Color.Error" 
-                                              Variant="Variant.Outlined"
-                                              StartIcon="@Icons.Material.Filled.Delete"
-                                              OnClick="@(() => DeleteDeliveryNote(selectedDeliveryNote))">
-                                        Izbriši
-                                    </MudButton>
+                <MudDataGrid Items="@filteredDeliveryNotes" 
+                            Filterable="true" 
+                            FilterMode="DataGridFilterMode.ColumnFilterRow"
+                            SortMode="SortMode.Multiple" 
+                            Groupable="false"
+                            QuickFilter="@_quickFilter"
+                            Hover="true"
+                            Striped="true"
+                            Dense="true"
+                            Loading="@isLoading"
+                            RowsPerPage="10"
+                            ShowMenuIcon="false">
+                    <Columns>
+                        <PropertyColumn T="DeliveryNoteDto" TProperty="string" Property="x => x.DeliveryNoteNumber" Title="Številka dobavnice" Sortable="true" Filterable="true" />
+                        <TemplateColumn T="DeliveryNoteDto" Title="Datum" Sortable="true" SortBy="x => x.DeliveryDate" Filterable="true">
+                            <CellTemplate Context="deliveryNote">
+                                <MudText>@deliveryNote.Item.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
+                            </CellTemplate>
+                            <FilterTemplate>
+                                <MudDatePicker @bind-Date="deliveryDateFilter" @bind-Date:after="OnDeliveryDateFilterChanged" Clearable="true" />
+                            </FilterTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn T="DeliveryNoteDto" TProperty="string" Property="x => x.SupplierName" Title="Dobavitelj" Sortable="true" Filterable="true" />
+                        <PropertyColumn T="DeliveryNoteDto" TProperty="decimal" Property="x => x.TotalAmount" Title="Znesek" Sortable="true">
+                            <CellTemplate Context="deliveryNote">
+                                <MudText>@deliveryNote.Item.TotalAmount.ToString("C")</MudText>
+                            </CellTemplate>
+                        </PropertyColumn>
+                        <TemplateColumn T="DeliveryNoteDto" Title="Ustvarjeno" Sortable="true" SortBy="x => x.CreatedAt" Filterable="true">
+                            <CellTemplate Context="deliveryNote">
+                                <MudText>@deliveryNote.Item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</MudText>
+                            </CellTemplate>
+                            <FilterTemplate>
+                                <MudDatePicker @bind-Date="createdDateFilter" @bind-Date:after="OnCreatedDateFilterChanged" Clearable="true" />
+                            </FilterTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Akcije" Sortable="false" Filterable="false">
+                            <CellTemplate Context="deliveryNote">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                                  Color="Color.Primary" 
+                                                  Size="Size.Small"
+                                                  Title="Poglej podrobnosti"
+                                                  OnClick="@(async () => await ViewDeliveryNote(deliveryNote.Item))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                  Color="Color.Error" 
+                                                  Size="Size.Small"
+                                                  Title="Izbriši"
+                                                  OnClick="@(() => DeleteDeliveryNote(deliveryNote.Item))" />
                                 </MudStack>
-                            </MudStack>
-                        }
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="DeliveryNoteDto" />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudPaper>
         }
     </MudStack>
 </MudContainer>
 
 <DeliveryNoteFormDialog IsVisible="@showDeliveryNoteDialog"
                         OnResult="HandleDeliveryNoteDialogResult" />
+
+<DeliveryNoteViewDialog IsVisible="@showViewDialog"
+                        DeliveryNote="@selectedDeliveryNote"
+                        DeliveryNoteDetails="@selectedDeliveryNoteDetails"
+                        OnClose="HandleViewDialogClose" />
 
 @if (showDeleteDialog)
 {
@@ -211,20 +164,29 @@
 
 @code {
     private List<DeliveryNoteDto>? deliveryNotes;
+    private List<DeliveryNoteDto>? filteredDeliveryNotes;
     private DeliveryNoteDto? selectedDeliveryNote;
     private DeliveryNoteDto? selectedDeliveryNoteDetails;
     private string searchString = string.Empty;
     private bool showDeliveryNoteDialog = false;
+    private bool showViewDialog = false;
     private bool showDeleteDialog = false;
     private string deleteMessage = string.Empty;
     private DeliveryNoteDto? deliveryNoteToDelete;
-
-    private List<DeliveryNoteDto> FilteredDeliveryNotes => deliveryNotes?.Where(dn =>
-        string.IsNullOrWhiteSpace(searchString) ||
-        dn.DeliveryNoteNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-        dn.SupplierName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-        (dn.Notes?.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
-    ).ToList() ?? new List<DeliveryNoteDto>();
+    private bool isLoading = false;
+    private DateTime? deliveryDateFilter;
+    private DateTime? createdDateFilter;
+    
+    private Func<DeliveryNoteDto, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+            
+        var searchLower = searchString.ToLower();
+        return x.DeliveryNoteNumber.ToLower().Contains(searchLower) ||
+               x.SupplierName.ToLower().Contains(searchLower) ||
+               (x.Notes?.ToLower().Contains(searchLower) ?? false);
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -235,34 +197,27 @@
     {
         try
         {
+            isLoading = true;
             deliveryNotes = await DeliveryNoteService.GetAllDeliveryNotesAsync();
-            
-            // If a delivery note was selected, reload its details
-            if (selectedDeliveryNote != null)
-            {
-                var updatedNote = deliveryNotes.FirstOrDefault(dn => dn.Id == selectedDeliveryNote.Id);
-                if (updatedNote != null)
-                {
-                    await SelectDeliveryNote(updatedNote);
-                }
-                else
-                {
-                    selectedDeliveryNote = null;
-                    selectedDeliveryNoteDetails = null;
-                }
-            }
+            ApplyFilters();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Napaka pri nalaganju dobavnic: {ex.Message}", Severity.Error);
             deliveryNotes = new List<DeliveryNoteDto>();
+            filteredDeliveryNotes = new List<DeliveryNoteDto>();
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private async Task SelectDeliveryNote(DeliveryNoteDto note)
+    private async Task ViewDeliveryNote(DeliveryNoteDto note)
     {
         selectedDeliveryNote = note;
         selectedDeliveryNoteDetails = null;
+        showViewDialog = true;
         StateHasChanged();
         
         try
@@ -287,6 +242,14 @@
         {
             await LoadDeliveryNotes();
         }
+    }
+    
+    private void HandleViewDialogClose()
+    {
+        showViewDialog = false;
+        selectedDeliveryNote = null;
+        selectedDeliveryNoteDetails = null;
+        StateHasChanged();
     }
 
     private void DeleteDeliveryNote(DeliveryNoteDto deliveryNote)
@@ -315,5 +278,40 @@
             }
         }
         deliveryNoteToDelete = null;
+    }
+    
+    private void OnDeliveryDateFilterChanged()
+    {
+        ApplyFilters();
+        StateHasChanged();
+    }
+    
+    private void OnCreatedDateFilterChanged()
+    {
+        ApplyFilters();
+        StateHasChanged();
+    }
+    
+    private void ApplyFilters()
+    {
+        if (deliveryNotes == null)
+        {
+            filteredDeliveryNotes = new List<DeliveryNoteDto>();
+            return;
+        }
+
+        var result = deliveryNotes.AsEnumerable();
+
+        if (deliveryDateFilter.HasValue)
+        {
+            result = result.Where(d => d.DeliveryDate.Date == deliveryDateFilter.Value.Date);
+        }
+
+        if (createdDateFilter.HasValue)
+        {
+            result = result.Where(d => d.CreatedAt.Date == createdDateFilter.Value.Date);
+        }
+
+        filteredDeliveryNotes = result.ToList();
     }
 }

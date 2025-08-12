@@ -16,6 +16,8 @@ public class ToolCategoryRepository : IToolCategoryRepository
     {
         return await _context.ToolCategories
             .Include(tc => tc.Tools)
+            .Include(tc => tc.CreatedByUser)
+            .Include(tc => tc.UpdatedByUser)
             .FirstOrDefaultAsync(tc => tc.Id == id);
     }
 
@@ -23,6 +25,8 @@ public class ToolCategoryRepository : IToolCategoryRepository
     {
         return await _context.ToolCategories
             .Include(tc => tc.Tools)
+            .Include(tc => tc.CreatedByUser)
+            .Include(tc => tc.UpdatedByUser)
             .OrderBy(tc => tc.Name)
             .ToListAsync();
     }
@@ -31,6 +35,8 @@ public class ToolCategoryRepository : IToolCategoryRepository
     {
         return await _context.ToolCategories
             .Include(tc => tc.Tools)
+            .Include(tc => tc.CreatedByUser)
+            .Include(tc => tc.UpdatedByUser)
             .Where(tc => tc.IsActive)
             .OrderBy(tc => tc.Name)
             .ToListAsync();
@@ -40,6 +46,8 @@ public class ToolCategoryRepository : IToolCategoryRepository
     {
         return await _context.ToolCategories
             .Include(tc => tc.Tools)
+            .Include(tc => tc.CreatedByUser)
+            .Include(tc => tc.UpdatedByUser)
             .FirstOrDefaultAsync(tc => tc.Code == code);
     }
 

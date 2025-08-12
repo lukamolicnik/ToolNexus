@@ -3,6 +3,7 @@
     public interface IToolRepository
     {
         Task<List<Tool>> GetAllToolsAsync();
+        Task<List<Tool>> GetActiveToolsAsync();
         Task<Tool?> GetByIdAsync(int id);
         Task<Tool?> GetByCodeAsync(string code);
         Task AddAsync(Tool tool);

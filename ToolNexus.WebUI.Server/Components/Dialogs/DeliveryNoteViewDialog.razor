@@ -1,0 +1,102 @@
+@using ToolNexus.Application.DeliveryNotes
+@using ToolNexus.Application.DeliveryNotes.DTOs
+@inject ISnackbar Snackbar
+
+@if (IsVisible && DeliveryNote != null)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto; padding: 20px 10px;">
+        <MudPaper Class="pa-6" Style="max-width: 800px; width: 90vw; margin: 20px auto;" Elevation="8">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">Podrobnosti dobavnice</MudText>
+                    <MudIconButton Icon="Icons.Material.Filled.Close" OnClick="HandleClose" />
+                </MudStack>
+
+                <MudGrid>
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Številka dobavnice</MudText>
+                        <MudText Typo="Typo.body1">@DeliveryNote.DeliveryNoteNumber</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Datum</MudText>
+                        <MudText Typo="Typo.body1">@DeliveryNote.DeliveryDate.ToString("dd.MM.yyyy")</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Dobavitelj</MudText>
+                        <MudText Typo="Typo.body1">@DeliveryNote.SupplierName</MudText>
+                    </MudItem>
+                    @if (!string.IsNullOrEmpty(DeliveryNote.Notes))
+                    {
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.caption">Opombe</MudText>
+                            <MudText Typo="Typo.body1">@DeliveryNote.Notes</MudText>
+                        </MudItem>
+                    }
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption">Ustvarjeno</MudText>
+                        <MudText Typo="Typo.body1">@DeliveryNote.CreatedAt.ToString("dd.MM.yyyy HH:mm")</MudText>
+                    </MudItem>
+                </MudGrid>
+                
+                <MudDivider />
+                
+                <MudText Typo="Typo.h6">Postavke</MudText>
+                
+                @if (DeliveryNoteDetails == null)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                }
+                else if (DeliveryNoteDetails.Items == null || DeliveryNoteDetails.Items.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Ta dobavnica nima postavk.</MudAlert>
+                }
+                else
+                {
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>Koda</th>
+                                <th>Orodje</th>
+                                <th style="text-align: right;">Količina</th>
+                                <th style="text-align: right;">Cena/kos</th>
+                                <th style="text-align: right;">Skupaj</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in DeliveryNoteDetails.Items)
+                            {
+                                <tr>
+                                    <td>@item.ToolCode</td>
+                                    <td>@item.ToolName</td>
+                                    <td style="text-align: right;">@item.Quantity</td>
+                                    <td style="text-align: right;">@item.UnitPrice.ToString("C")</td>
+                                    <td style="text-align: right;">@item.TotalPrice.ToString("C")</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="4" style="text-align: right;"><strong>Skupaj:</strong></td>
+                                <td style="text-align: right;"><strong>@DeliveryNoteDetails.TotalAmount.ToString("C")</strong></td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+                }
+                
+                <MudStack Row="true" Justify="Justify.FlexEnd">
+                    <MudButton OnClick="HandleClose">Zapri</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public DeliveryNoteDto? DeliveryNote { get; set; }
+    [Parameter] public DeliveryNoteDto? DeliveryNoteDetails { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    private async Task HandleClose()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

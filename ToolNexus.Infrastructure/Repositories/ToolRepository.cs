@@ -20,19 +20,42 @@ namespace ToolNexus.Infrastructure.Repositories
         public async Task<List<Tool>> GetAllToolsAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.Include(t => t.ToolCategory).ToListAsync();
+            return await context.Tools
+                .Include(t => t.ToolCategory)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.UpdatedByUser)
+                .ToListAsync();
+        }
+
+        public async Task<List<Tool>> GetActiveToolsAsync()
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Tools
+                .Include(t => t.ToolCategory)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.UpdatedByUser)
+                .Where(t => t.IsActive)
+                .ToListAsync();
         }
 
         public async Task<Tool?> GetByIdAsync(int id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.Include(t => t.ToolCategory).FirstOrDefaultAsync(t => t.Id == id);
+            return await context.Tools
+                .Include(t => t.ToolCategory)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.UpdatedByUser)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<Tool?> GetByCodeAsync(string code)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Tools.Include(t => t.ToolCategory).FirstOrDefaultAsync(t => t.Code == code);
+            return await context.Tools
+                .Include(t => t.ToolCategory)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.UpdatedByUser)
+                .FirstOrDefaultAsync(t => t.Code == code);
         }
 
         public async Task AddAsync(Tool tool)
@@ -55,6 +78,7 @@ namespace ToolNexus.Infrastructure.Repositories
                 existingTool.MinimumStock = tool.MinimumStock;
                 existingTool.CriticalStock = tool.CriticalStock;
                 existingTool.ToolCategoryId = tool.ToolCategoryId;
+                existingTool.IsActive = tool.IsActive;
                 existingTool.UpdatedBy = tool.UpdatedBy;
                 existingTool.UpdatedAt = DateTime.Now;
                 

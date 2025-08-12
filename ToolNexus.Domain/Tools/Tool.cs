@@ -13,6 +13,7 @@
         public int CurrentStock { get; set; } = 0;
         public int MinimumStock { get; set; } = 0;
         public int CriticalStock { get; set; } = 0;
+        public bool IsActive { get; set; } = true;
         public int? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public int? UpdatedBy { get; set; }
