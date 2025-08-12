@@ -137,9 +137,8 @@ namespace ToolNexus.Infrastructure
 
         private static string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            // Uporabi BCrypt z work factor 12 za varno hashiranje (enako kot v UserService)
+            return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
         }
     }
 }

@@ -100,8 +100,7 @@ using (var scope = app.Services.CreateScope())
 {
     await ToolNexus.Infrastructure.DataSeeder.SeedDataAsync(scope.ServiceProvider);
     
-    // TEMPORARILY DISABLED - Posodobi obstoječa gesla na BCrypt format
-    // await ToolNexus.Infrastructure.Data.Migrations.UpdatePasswordsToBCrypt.UpdateExistingPasswords(scope.ServiceProvider);
+    // BCrypt migracija ni več potrebna, ker DataSeeder že uporablja BCrypt
 }
 
 app.Run();
