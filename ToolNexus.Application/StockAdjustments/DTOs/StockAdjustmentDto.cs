@@ -14,6 +14,6 @@ public class StockAdjustmentDto
     public int NewStock { get; set; }
     public string? Reason { get; set; }
     public string? Notes { get; set; }
-    public string AdjustedBy { get; set; } = string.Empty;
-    public DateTime AdjustedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
 }

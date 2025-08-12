@@ -112,7 +112,7 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Datum in čas">
-                    <MudText Typo="Typo.body2">@context.AdjustedAt.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+                    <MudText Typo="Typo.body2">@context.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
                 </MudTd>
                 <MudTd DataLabel="Orodje">
                     <MudStack Spacing="0">
@@ -164,7 +164,7 @@
                     }
                 </MudTd>
                 <MudTd DataLabel="Izvedel">
-                    <MudText>@context.AdjustedBy</MudText>
+                    <MudText>@context.CreatedBy</MudText>
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>

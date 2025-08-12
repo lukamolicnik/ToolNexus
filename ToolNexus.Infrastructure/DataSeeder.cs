@@ -80,7 +80,7 @@ namespace ToolNexus.Infrastructure
                     PasswordHash = HashPassword("admin123"), // Privzeto geslo
                     UserRoleId = adminRole.Id,
                     IsActive = true,
-                    CreatedBy = "System",
+                    CreatedBy = null,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };
@@ -97,7 +97,7 @@ namespace ToolNexus.Infrastructure
                     PasswordHash = HashPassword("supervisor123"),
                     UserRoleId = supervisorRole.Id,
                     IsActive = true,
-                    CreatedBy = "System",
+                    CreatedBy = null,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };
@@ -114,7 +114,7 @@ namespace ToolNexus.Infrastructure
                     PasswordHash = HashPassword("worker123"),
                     UserRoleId = workerRole.Id,
                     IsActive = true,
-                    CreatedBy = "System",
+                    CreatedBy = null,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };

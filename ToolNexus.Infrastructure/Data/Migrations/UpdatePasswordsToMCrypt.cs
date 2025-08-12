@@ -35,7 +35,7 @@ namespace ToolNexus.Infrastructure.Data.Migrations
                     {
                         user.PasswordHash = userService.HashPassword(newPassword);
                         user.UpdatedAt = DateTime.Now;
-                        user.UpdatedBy = "System";
+                        user.UpdatedBy = null;
                     }
                 }
             }

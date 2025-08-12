@@ -26,7 +26,7 @@ namespace ToolNexus.Infrastructure
             // Register UserContextService
             services.AddScoped<IUserContextService, UserContextService>();
 
-            // Register AuditInterceptor as scoped to maintain HttpContext
+            // Register AuditInterceptor
             services.AddScoped<AuditInterceptor>();
 
             // Use DbContextFactory for thread-safe DbContext creation with audit interceptor
@@ -34,8 +34,7 @@ namespace ToolNexus.Infrastructure
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
                 
-                // Always create a new audit interceptor with the current service provider
-                // This ensures we get the correct HttpContext
+                // Enable audit interceptor
                 var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
                 var userContextService = new UserContextService(httpContextAccessor);
                 var auditInterceptor = new AuditInterceptor(userContextService);
@@ -48,7 +47,7 @@ namespace ToolNexus.Infrastructure
                 var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
                 optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
                 
-                // Get the scoped audit interceptor
+                // Enable audit interceptor
                 var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
                 optionsBuilder.AddInterceptors(auditInterceptor);
                 

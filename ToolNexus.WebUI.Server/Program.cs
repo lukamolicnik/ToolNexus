@@ -100,8 +100,8 @@ using (var scope = app.Services.CreateScope())
 {
     await ToolNexus.Infrastructure.DataSeeder.SeedDataAsync(scope.ServiceProvider);
     
-    // Posodobi obstoječa gesla na BCrypt format
-    await ToolNexus.Infrastructure.Data.Migrations.UpdatePasswordsToBCrypt.UpdateExistingPasswords(scope.ServiceProvider);
+    // TEMPORARILY DISABLED - Posodobi obstoječa gesla na BCrypt format
+    // await ToolNexus.Infrastructure.Data.Migrations.UpdatePasswordsToBCrypt.UpdateExistingPasswords(scope.ServiceProvider);
 }
 
 app.Run();

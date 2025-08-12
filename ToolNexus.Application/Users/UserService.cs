@@ -52,7 +52,7 @@ namespace ToolNexus.Application.Users
                 PasswordHash = this.HashPassword(createUserDto.Password),
                 UserRoleId = createUserDto.UserRoleId,
                 IsActive = createUserDto.IsActive,
-                CreatedBy = createdBy,
+                CreatedBy = int.TryParse(createdBy, out var createdByInt) ? createdByInt : null,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -84,7 +84,7 @@ namespace ToolNexus.Application.Users
             existingUser.Email = updateUserDto.Email;
             existingUser.UserRoleId = updateUserDto.UserRoleId;
             existingUser.IsActive = updateUserDto.IsActive;
-            existingUser.UpdatedBy = updatedBy;
+            existingUser.UpdatedBy = int.TryParse(updatedBy, out var updatedByInt) ? updatedByInt : null;
             existingUser.UpdatedAt = DateTime.Now;
 
             // Posodobi geslo, če je podano

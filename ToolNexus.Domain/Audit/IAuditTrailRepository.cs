@@ -9,12 +9,12 @@ namespace ToolNexus.Domain.Audit
             string? entityType = null,
             string? entityId = null,
             string? action = null,
-            Guid? userId = null,
+            int? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             string? searchTerm = null);
         Task<IEnumerable<AuditTrail>> GetByEntityAsync(string entityType, string entityId);
-        Task<IEnumerable<AuditTrail>> GetByUserAsync(Guid userId);
+        Task<IEnumerable<AuditTrail>> GetByUserAsync(int userId);
         Task<AuditTrail?> GetByIdAsync(Guid id);
         Task<IEnumerable<AuditTrail>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<IEnumerable<AuditTrail>> GetByEntityTypeAsync(string entityType);

@@ -132,7 +132,7 @@ namespace ToolNexus.Application.DeliveryNotes
                 Notes = deliveryNote.Notes,
                 TotalAmount = deliveryNote.TotalAmount,
                 CreatedAt = deliveryNote.CreatedAt,
-                CreatedBy = deliveryNote.CreatedBy
+                CreatedBy = deliveryNote.CreatedBy?.ToString()
             };
         }
 

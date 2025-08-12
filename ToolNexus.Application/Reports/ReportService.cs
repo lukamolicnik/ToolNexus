@@ -35,8 +35,8 @@ namespace ToolNexus.Application.Reports
             var adjustments = await _stockAdjustmentRepository.GetAllAsync();
             var monthlyAdjustments = adjustments
                 .Where(a => a.AdjustmentType == StockAdjustmentType.Decrease &&
-                           a.AdjustedAt >= startDate &&
-                           a.AdjustedAt <= endDate)
+                           a.CreatedAt >= startDate &&
+                           a.CreatedAt <= endDate)
                 .ToList();
 
             if (request.CategoryId.HasValue)
@@ -77,10 +77,10 @@ namespace ToolNexus.Application.Reports
                 {
                     lossItem.Incidents = toolAdjustments.Select(a => new LossIncidentDto
                     {
-                        Date = a.AdjustedAt,
+                        Date = a.CreatedAt,
                         Reason = a.Reason ?? "",
                         Quantity = a.Quantity,
-                        AdjustedBy = a.AdjustedBy,
+                        CreatedBy = a.CreatedByUser?.Username ?? a.CreatedBy.ToString() ?? "",
                         Notes = a.Notes
                     }).OrderBy(i => i.Date).ToList();
                 }
@@ -115,8 +115,8 @@ namespace ToolNexus.Application.Reports
             var adjustments = await _stockAdjustmentRepository.GetAllAsync();
             var filteredAdjustments = adjustments
                 .Where(a => a.AdjustmentType == StockAdjustmentType.Decrease &&
-                           a.AdjustedAt >= request.StartDate &&
-                           a.AdjustedAt <= request.EndDate)
+                           a.CreatedAt >= request.StartDate &&
+                           a.CreatedAt <= request.EndDate)
                 .ToList();
 
             // Group by category

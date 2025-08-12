@@ -59,11 +59,9 @@ namespace ToolNexus.Infrastructure
                     .IsRequired()
                     .HasConversion<int>();
 
-                entity.Property(e => e.CreatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy);
 
-                entity.Property(e => e.UpdatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy);
 
                 // Unique constraints
                 entity.HasIndex(e => e.Username)
@@ -76,6 +74,21 @@ namespace ToolNexus.Infrastructure
                     .WithMany(r => r.Users)
                     .HasForeignKey(e => e.UserRoleId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                // FK relationships for CreatedBy and UpdatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Indexes for FK columns
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.UpdatedBy);
             });
 
             modelBuilder.Entity<UserRole>(entity =>
@@ -126,11 +139,9 @@ namespace ToolNexus.Infrastructure
                     .IsRequired()
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.CreatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy);
 
-                entity.Property(e => e.UpdatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy);
                 
                 entity.HasOne(e => e.ToolCategory)
                     .WithMany(tc => tc.Tools)
@@ -140,6 +151,21 @@ namespace ToolNexus.Infrastructure
                 // Unique constraint za Code
                 entity.HasIndex(e => e.Code)
                     .IsUnique();
+
+                // FK relationships for CreatedBy and UpdatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Indexes for FK columns
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.UpdatedBy);
             });
 
             // AuditTrail entity configuration
@@ -172,15 +198,17 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Changes)
                     .HasColumnType("nvarchar(max)");
 
-                entity.Property(e => e.TableName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
                 // Index za hitrejše iskanje
                 entity.HasIndex(e => e.EntityType);
                 entity.HasIndex(e => e.EntityId);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Timestamp);
+
+                // FK relationship for UserId
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // ToolCategory entity configuration
@@ -199,11 +227,9 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Description)
                     .HasMaxLength(1000);
 
-                entity.Property(e => e.CreatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy);
 
-                entity.Property(e => e.UpdatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy);
 
                 entity.Property(e => e.IsActive)
                     .IsRequired()
@@ -212,6 +238,21 @@ namespace ToolNexus.Infrastructure
                 // Unique constraint za Code
                 entity.HasIndex(e => e.Code)
                     .IsUnique();
+
+                // FK relationships for CreatedBy and UpdatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Indexes for FK columns
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.UpdatedBy);
             });
 
             // Supplier entity configuration
@@ -232,11 +273,9 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Address)
                     .HasMaxLength(500);
 
-                entity.Property(e => e.CreatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy);
 
-                entity.Property(e => e.UpdatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy);
 
                 entity.Property(e => e.IsActive)
                     .IsRequired()
@@ -245,6 +284,21 @@ namespace ToolNexus.Infrastructure
                 // Unique constraint
                 entity.HasIndex(e => e.Name)
                     .IsUnique();
+
+                // FK relationships for CreatedBy and UpdatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Indexes for FK columns
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.UpdatedBy);
             });
 
             // DeliveryNote entity configuration
@@ -262,11 +316,9 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Notes)
                     .HasMaxLength(1000);
 
-                entity.Property(e => e.CreatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy);
 
-                entity.Property(e => e.UpdatedBy)
-                    .HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy);
 
                 // Unique constraint
                 entity.HasIndex(e => e.DeliveryNoteNumber)
@@ -277,6 +329,21 @@ namespace ToolNexus.Infrastructure
                     .WithMany(s => s.DeliveryNotes)
                     .HasForeignKey(e => e.SupplierId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                // FK relationships for CreatedBy and UpdatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Indexes for FK columns
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.UpdatedBy);
             });
 
             // DeliveryNoteItem entity configuration
@@ -330,11 +397,10 @@ namespace ToolNexus.Infrastructure
                 entity.Property(e => e.Notes)
                     .HasMaxLength(1000);
 
-                entity.Property(e => e.AdjustedBy)
-                    .IsRequired()
-                    .HasMaxLength(100);
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired();
 
-                entity.Property(e => e.AdjustedAt)
+                entity.Property(e => e.CreatedAt)
                     .IsRequired();
 
                 // Relationships
@@ -343,9 +409,16 @@ namespace ToolNexus.Infrastructure
                     .HasForeignKey(e => e.ToolId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                // FK relationship for CreatedBy
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 // Index for faster queries
                 entity.HasIndex(e => e.ToolId);
-                entity.HasIndex(e => e.AdjustedAt);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.CreatedBy);
             });
         }
 

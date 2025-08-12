@@ -18,7 +18,8 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
-            .OrderByDescending(sa => sa.AdjustedAt)
+            .Include(sa => sa.CreatedByUser)
+            .OrderByDescending(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -27,8 +28,9 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         using var context = await _contextFactory.CreateDbContextAsync();
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
+            .Include(sa => sa.CreatedByUser)
             .Where(sa => sa.ToolId == toolId)
-            .OrderByDescending(sa => sa.AdjustedAt)
+            .OrderByDescending(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -37,6 +39,7 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         using var context = await _contextFactory.CreateDbContextAsync();
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
+            .Include(sa => sa.CreatedByUser)
             .FirstOrDefaultAsync(sa => sa.Id == id);
     }
 
@@ -52,7 +55,8 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         using var context = await _contextFactory.CreateDbContextAsync();
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
-            .OrderByDescending(sa => sa.AdjustedAt)
+            .Include(sa => sa.CreatedByUser)
+            .OrderByDescending(sa => sa.CreatedAt)
             .Take(count)
             .ToListAsync();
     }
@@ -65,8 +69,8 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         return await context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
-            .Where(sa => sa.AdjustedAt >= startDate && sa.AdjustedAt <= adjustedEndDate)
-            .OrderBy(sa => sa.AdjustedAt)
+            .Where(sa => sa.CreatedAt >= startDate && sa.CreatedAt <= adjustedEndDate)
+            .OrderBy(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -79,9 +83,9 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.AdjustmentType == StockAdjustmentType.Decrease &&
-                       sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= adjustedEndDate)
-            .OrderBy(sa => sa.AdjustedAt)
+                       sa.CreatedAt >= startDate &&
+                       sa.CreatedAt <= adjustedEndDate)
+            .OrderBy(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -94,9 +98,9 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.ToolId == toolId &&
-                       sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= adjustedEndDate)
-            .OrderBy(sa => sa.AdjustedAt)
+                       sa.CreatedAt >= startDate &&
+                       sa.CreatedAt <= adjustedEndDate)
+            .OrderBy(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -109,9 +113,9 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
             .Where(sa => sa.Tool.ToolCategoryId == categoryId &&
-                       sa.AdjustedAt >= startDate &&
-                       sa.AdjustedAt <= adjustedEndDate)
-            .OrderBy(sa => sa.AdjustedAt)
+                       sa.CreatedAt >= startDate &&
+                       sa.CreatedAt <= adjustedEndDate)
+            .OrderBy(sa => sa.CreatedAt)
             .ToListAsync();
     }
 
@@ -122,6 +126,7 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
         var query = context.StockAdjustments
             .Include(sa => sa.Tool)
                 .ThenInclude(t => t.ToolCategory)
+            .Include(sa => sa.CreatedByUser)
             .AsQueryable();
 
         // Apply filters
@@ -142,19 +147,19 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
                 sa.Tool.Code.Contains(searchTerm) ||
                 sa.Reason.Contains(searchTerm) ||
                 sa.Notes.Contains(searchTerm) ||
-                sa.AdjustedBy.Contains(searchTerm));
+                (sa.CreatedByUser != null && sa.CreatedByUser.Username.Contains(searchTerm)));
         }
 
         if (startDate.HasValue)
         {
-            query = query.Where(sa => sa.AdjustedAt >= startDate.Value);
+            query = query.Where(sa => sa.CreatedAt >= startDate.Value);
         }
 
         if (endDate.HasValue)
         {
             // Adjust end date to include the entire day
             var adjustedEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
-            query = query.Where(sa => sa.AdjustedAt <= adjustedEndDate);
+            query = query.Where(sa => sa.CreatedAt <= adjustedEndDate);
         }
 
         // Get total count
@@ -162,7 +167,7 @@ public class StockAdjustmentRepository : IStockAdjustmentRepository
 
         // Apply pagination
         var items = await query
-            .OrderByDescending(sa => sa.AdjustedAt)
+            .OrderByDescending(sa => sa.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

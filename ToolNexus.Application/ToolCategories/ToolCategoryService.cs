@@ -109,9 +109,9 @@ public class ToolCategoryService : IToolCategoryService
             Description = category.Description,
             IsActive = category.IsActive,
             CreatedAt = category.CreatedAt,
-            CreatedBy = category.CreatedBy,
+            CreatedBy = category.CreatedBy?.ToString(),
             UpdatedAt = category.UpdatedAt,
-            UpdatedBy = category.UpdatedBy,
+            UpdatedBy = category.UpdatedBy?.ToString(),
             ToolCount = category.Tools?.Count ?? 0
         };
     }

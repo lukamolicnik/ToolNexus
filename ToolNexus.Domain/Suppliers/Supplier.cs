@@ -1,6 +1,7 @@
 namespace ToolNexus.Domain.Suppliers
 {
     using ToolNexus.Domain.DeliveryNotes;
+    using ToolNexus.Domain.Users;
 
     public class Supplier
     {
@@ -10,12 +11,14 @@ namespace ToolNexus.Domain.Suppliers
         public string? Phone { get; set; }
         public string? Address { get; set; }
         public bool IsActive { get; set; } = true;
-        public string? CreatedBy { get; set; }
+        public int? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string? UpdatedBy { get; set; }
+        public int? UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
         public virtual ICollection<DeliveryNote> DeliveryNotes { get; set; } = new List<DeliveryNote>();
+        public virtual User? CreatedByUser { get; set; }
+        public virtual User? UpdatedByUser { get; set; }
     }
 }

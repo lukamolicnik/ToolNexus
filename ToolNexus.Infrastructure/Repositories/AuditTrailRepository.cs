@@ -26,7 +26,7 @@ namespace ToolNexus.Infrastructure.Repositories
             string? entityType = null,
             string? entityId = null,
             string? action = null,
-            Guid? userId = null,
+            int? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             string? searchTerm = null)
@@ -66,7 +66,6 @@ namespace ToolNexus.Infrastructure.Repositories
                 query = query.Where(a => 
                     a.EntityType.Contains(searchTerm) ||
                     a.UserName.Contains(searchTerm) ||
-                    a.TableName.Contains(searchTerm) ||
                     (a.Changes != null && a.Changes.Contains(searchTerm)));
             }
 
@@ -90,7 +89,7 @@ namespace ToolNexus.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<AuditTrail>> GetByUserAsync(Guid userId)
+        public async Task<IEnumerable<AuditTrail>> GetByUserAsync(int userId)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
             return await context.AuditTrails

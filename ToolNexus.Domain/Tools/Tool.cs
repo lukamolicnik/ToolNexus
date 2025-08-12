@@ -1,6 +1,7 @@
 ﻿namespace ToolNexus.Domain.Tools
 {
     using ToolNexus.Domain.ToolCategories;
+    using ToolNexus.Domain.Users;
 
     public class Tool
     {
@@ -12,12 +13,14 @@
         public int CurrentStock { get; set; } = 0;
         public int MinimumStock { get; set; } = 0;
         public int CriticalStock { get; set; } = 0;
-        public string? CreatedBy { get; set; }
+        public int? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string? UpdatedBy { get; set; }
+        public int? UpdatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         
         public virtual ToolCategory? ToolCategory { get; set; }
+        public virtual User? CreatedByUser { get; set; }
+        public virtual User? UpdatedByUser { get; set; }
 
         // Computed properties
         public bool IsBelowMinimum => CurrentStock <= MinimumStock;

@@ -47,7 +47,7 @@ namespace ToolNexus.Application.Audit
             return auditTrails.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<AuditTrailDto>> GetByUserAsync(Guid userId)
+        public async Task<IEnumerable<AuditTrailDto>> GetByUserAsync(int userId)
         {
             var auditTrails = await _auditTrailRepository.GetByUserAsync(userId);
             return auditTrails.Select(MapToDto);
@@ -131,8 +131,7 @@ namespace ToolNexus.Application.Audit
                 UserId = auditTrail.UserId,
                 UserName = auditTrail.UserName,
                 Timestamp = auditTrail.Timestamp,
-                Changes = auditTrail.Changes,
-                TableName = auditTrail.TableName
+                Changes = auditTrail.Changes
             };
 
             // Parse changes JSON into ChangeDetails

@@ -80,14 +80,14 @@ namespace ToolNexus.Infrastructure.Interceptors
                 _auditEntries.Add(auditEntry);
 
                 // Set CreatedBy/UpdatedBy fields automatically
-                var currentUser = _userContextService.GetCurrentUserName();
+                var currentUserId = GetCurrentUserId();
                 var entityType = entry.Entity.GetType();
                 
                 if (entry.State == EntityState.Added)
                 {
                     if (entityType.GetProperty("CreatedBy") != null)
                     {
-                        entry.Property("CreatedBy").CurrentValue = currentUser;
+                        entry.Property("CreatedBy").CurrentValue = currentUserId;
                     }
                     if (entityType.GetProperty("CreatedAt") != null)
                     {
@@ -95,7 +95,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     }
                     if (entityType.GetProperty("UpdatedBy") != null)
                     {
-                        entry.Property("UpdatedBy").CurrentValue = currentUser;
+                        entry.Property("UpdatedBy").CurrentValue = currentUserId;
                     }
                     if (entityType.GetProperty("UpdatedAt") != null)
                     {
@@ -106,7 +106,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                 {
                     if (entityType.GetProperty("UpdatedBy") != null)
                     {
-                        entry.Property("UpdatedBy").CurrentValue = currentUser;
+                        entry.Property("UpdatedBy").CurrentValue = currentUserId;
                     }
                     if (entityType.GetProperty("UpdatedAt") != null)
                     {
@@ -182,7 +182,7 @@ namespace ToolNexus.Infrastructure.Interceptors
                     UserId = auditEntry.UserId,
                     UserName = auditEntry.UserName,
                     Timestamp = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, CentralEuropeTimeZone),
-                    TableName = auditEntry.TableName
+                    // TableName property removed from entity
                 };
 
                 var changes = new Dictionary<string, object>();
@@ -217,18 +217,14 @@ namespace ToolNexus.Infrastructure.Interceptors
             _auditEntries.Clear();
         }
 
-        private Guid GetCurrentUserId()
+        private int GetCurrentUserId()
         {
             var userIdString = _userContextService.GetCurrentUserId();
             if (int.TryParse(userIdString, out var intUserId))
             {
-                // Convert int user ID to Guid for audit trail
-                // Using a deterministic GUID based on the int ID
-                var bytes = new byte[16];
-                BitConverter.GetBytes(intUserId).CopyTo(bytes, 0);
-                return new Guid(bytes);
+                return intUserId;
             }
-            return Guid.Empty;
+            return 0; // Default user ID when no authenticated user
         }
 
         private class AuditEntry
@@ -252,7 +248,7 @@ namespace ToolNexus.Infrastructure.Interceptors
             public string EntityType { get; }
             public string TableName { get; }
             public AuditAction Action { get; }
-            public Guid UserId { get; set; }
+            public int UserId { get; set; }
             public string UserName { get; set; } = string.Empty;
             public Dictionary<string, object?> KeyValues { get; } = new();
             public Dictionary<string, object?> OldValues { get; } = new();

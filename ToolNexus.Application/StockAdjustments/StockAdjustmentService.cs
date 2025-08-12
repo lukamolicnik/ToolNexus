@@ -71,8 +71,8 @@ public class StockAdjustmentService : IStockAdjustmentService
             NewStock = adjustment.NewStock,
             Reason = adjustment.Reason,
             Notes = adjustment.Notes,
-            AdjustedBy = adjustment.AdjustedBy,
-            AdjustedAt = adjustment.AdjustedAt
+            CreatedBy = adjustment.CreatedByUser?.Username ?? adjustment.CreatedBy.ToString() ?? "",
+            CreatedAt = adjustment.CreatedAt
         };
     }
 }

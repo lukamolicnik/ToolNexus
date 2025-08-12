@@ -45,8 +45,8 @@ namespace ToolNexus.Application.Tools
                 MinimumStock = toolDto.MinimumStock,
                 CriticalStock = toolDto.CriticalStock,
                 CurrentStock = 0,
-                CreatedBy = userId,
-                UpdatedBy = userId,
+                CreatedBy = int.TryParse(userId, out var userIdInt) ? userIdInt : null,
+                UpdatedBy = int.TryParse(userId, out var userIdInt2) ? userIdInt2 : null,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -66,7 +66,7 @@ namespace ToolNexus.Application.Tools
             tool.MinimumStock = toolDto.MinimumStock;
             tool.CriticalStock = toolDto.CriticalStock;
             tool.ToolCategoryId = toolDto.ToolCategoryId;
-            tool.UpdatedBy = userId;
+            tool.UpdatedBy = int.TryParse(userId, out var userIdInt) ? userIdInt : null;
 
             await _toolRepository.UpdateAsync(tool);
             return MapToDto(tool);
@@ -92,7 +92,7 @@ namespace ToolNexus.Application.Tools
 
             var previousStock = tool.CurrentStock;
             tool.CurrentStock += increaseStockDto.Quantity;
-            tool.UpdatedBy = increaseStockDto.UserId;
+            tool.UpdatedBy = int.TryParse(increaseStockDto.UserId, out var userIdInt) ? userIdInt : null;
             tool.UpdatedAt = DateTime.Now;
 
             await _toolRepository.UpdateAsync(tool);
@@ -106,8 +106,8 @@ namespace ToolNexus.Application.Tools
                 PreviousStock = previousStock,
                 NewStock = tool.CurrentStock,
                 Notes = increaseStockDto.Notes,
-                AdjustedBy = increaseStockDto.UserId,
-                AdjustedAt = DateTime.Now
+                CreatedBy = int.TryParse(increaseStockDto.UserId, out var adjustUserIdInt) ? adjustUserIdInt : 0,
+                CreatedAt = DateTime.Now
             };
             
             await _stockAdjustmentRepository.AddAsync(adjustment);
@@ -126,7 +126,7 @@ namespace ToolNexus.Application.Tools
 
             var previousStock = tool.CurrentStock;
             tool.CurrentStock -= decreaseStockDto.Quantity;
-            tool.UpdatedBy = decreaseStockDto.UserId;
+            tool.UpdatedBy = int.TryParse(decreaseStockDto.UserId, out var userIdInt) ? userIdInt : null;
             tool.UpdatedAt = DateTime.Now;
 
             await _toolRepository.UpdateAsync(tool);
@@ -141,8 +141,8 @@ namespace ToolNexus.Application.Tools
                 NewStock = tool.CurrentStock,
                 Reason = decreaseStockDto.Reason,
                 Notes = decreaseStockDto.Notes,
-                AdjustedBy = decreaseStockDto.UserId,
-                AdjustedAt = DateTime.Now
+                CreatedBy = int.TryParse(decreaseStockDto.UserId, out var adjustUserIdInt) ? adjustUserIdInt : 0,
+                CreatedAt = DateTime.Now
             };
             
             await _stockAdjustmentRepository.AddAsync(adjustment);
@@ -166,9 +166,9 @@ namespace ToolNexus.Application.Tools
                 IsBelowMinimum = tool.IsBelowMinimum,
                 IsCritical = tool.IsCritical,
                 CreatedAt = tool.CreatedAt,
-                CreatedBy = tool.CreatedBy,
+                CreatedBy = tool.CreatedBy?.ToString(),
                 UpdatedAt = tool.UpdatedAt,
-                UpdatedBy = tool.UpdatedBy
+                UpdatedBy = tool.UpdatedBy?.ToString()
             };
         }
     }
