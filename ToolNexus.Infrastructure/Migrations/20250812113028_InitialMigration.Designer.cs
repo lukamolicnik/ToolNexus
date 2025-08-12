@@ -12,8 +12,8 @@ using ToolNexus.Infrastructure;
 namespace ToolNexus.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250723145410_StockAdjustment")]
-    partial class StockAdjustment
+    [Migration("20250812113028_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,16 +48,11 @@ namespace ToolNexus.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("TableName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -88,9 +83,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("DeliveryDate")
                         .HasColumnType("datetime2");
@@ -110,16 +104,19 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
 
                     b.HasIndex("DeliveryNoteNumber")
                         .IsUnique();
 
                     b.HasIndex("SupplierId");
+
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("DeliveryNotes");
                 });
@@ -162,17 +159,15 @@ namespace ToolNexus.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("AdjustedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("AdjustedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("AdjustmentType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<int>("NewStock")
                         .HasColumnType("int");
@@ -196,7 +191,9 @@ namespace ToolNexus.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AdjustedAt");
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedBy");
 
                     b.HasIndex("ToolId");
 
@@ -218,9 +215,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -243,14 +239,17 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy");
+
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("Suppliers");
                 });
@@ -271,9 +270,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
@@ -292,14 +290,17 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("ToolCategories");
                 });
@@ -320,9 +321,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<int>("CriticalStock")
                         .ValueGeneratedOnAdd()
@@ -351,19 +351,22 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<int?>("ToolCategoryId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
 
+                    b.HasIndex("CreatedBy");
+
                     b.HasIndex("ToolCategoryId");
+
+                    b.HasIndex("UpdatedBy");
 
                     b.ToTable("Tools");
                 });
@@ -379,9 +382,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -409,9 +411,8 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
 
                     b.Property<int>("UserRoleId")
                         .HasColumnType("int");
@@ -423,8 +424,12 @@ namespace ToolNexus.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy");
+
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("UpdatedBy");
 
                     b.HasIndex("UserRoleId");
 
@@ -470,15 +475,40 @@ namespace ToolNexus.Infrastructure.Migrations
                     b.ToTable("UserRoles");
                 });
 
+            modelBuilder.Entity("ToolNexus.Domain.Audit.AuditTrail", b =>
+                {
+                    b.HasOne("ToolNexus.Domain.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ToolNexus.Domain.DeliveryNotes.DeliveryNote", b =>
                 {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ToolNexus.Domain.Suppliers.Supplier", "Supplier")
                         .WithMany("DeliveryNotes")
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ToolNexus.Domain.Users.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Supplier");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("ToolNexus.Domain.DeliveryNotes.DeliveryNoteItem", b =>
@@ -502,32 +532,102 @@ namespace ToolNexus.Infrastructure.Migrations
 
             modelBuilder.Entity("ToolNexus.Domain.StockAdjustments.StockAdjustment", b =>
                 {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ToolNexus.Domain.Tools.Tool", "Tool")
                         .WithMany()
                         .HasForeignKey("ToolId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Tool");
+                });
+
+            modelBuilder.Entity("ToolNexus.Domain.Suppliers.Supplier", b =>
+                {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ToolNexus.Domain.Users.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("ToolNexus.Domain.ToolCategories.ToolCategory", b =>
+                {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ToolNexus.Domain.Users.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("ToolNexus.Domain.Tools.Tool", b =>
                 {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ToolNexus.Domain.ToolCategories.ToolCategory", "ToolCategory")
                         .WithMany("Tools")
                         .HasForeignKey("ToolCategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ToolNexus.Domain.Users.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("ToolCategory");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("ToolNexus.Domain.Users.User", b =>
                 {
+                    b.HasOne("ToolNexus.Domain.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ToolNexus.Domain.Users.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ToolNexus.Domain.Users.UserRole", "UserRole")
                         .WithMany("Users")
                         .HasForeignKey("UserRoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
 
                     b.Navigation("UserRole");
                 });
